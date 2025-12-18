@@ -133,3 +133,9 @@ When the **OptimizerAgent** generates study materials, it saves them as Anki Pac
 1.  Locate the `.apkg` file in the project folder.
 2.  Double-click the file to import it into your [Anki](https://apps.ankiweb.net/) desktop application.
 3.  Study the cards for the recommended duration before taking the exam.
+
+
+
+**DISCLAIMER:**
+The code was vibe-coded at >90% using Gemini 3.0 and Antigravity.
+Use at your own risk.

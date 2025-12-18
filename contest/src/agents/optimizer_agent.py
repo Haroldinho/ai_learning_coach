@@ -7,7 +7,7 @@ import sys
 import random
 from typing import List
 from tenacity import retry, stop_after_attempt, wait_exponential, retry_if_exception_type
-from ..models import LearningGoal, UserProfile, Flashcard, FlashcardDeck, FlashcardList
+from ..models import LearningGoal, UserProfile, Flashcard, FlashcardDeck, FlashcardList, AssessmentResult
 
 # Add the parent directory to sys.path to allow importing from tools
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -83,4 +83,55 @@ class OptimizerAgent:
 
         except Exception as e:
             print(f"Error generating curriculum/cards: {e}")
+            raise e
+
+    @retry(
+        retry=retry_if_exception_type(ClientError),
+        stop=stop_after_attempt(5),
+        wait=wait_exponential(multiplier=2, min=4, max=60)
+    )
+    def generate_remediation_cards(self, goal: LearningGoal, user_profile: UserProfile, result: AssessmentResult) -> str:
+        """
+        Generates targeted remediation flashcards based on assessment failures.
+        """
+        current_milestone = goal.milestones[user_profile.current_milestone_index]
+        
+        prompt = f"""
+        You are a Remediation specialist.
+        The user failed their assessment for: "{current_milestone.title}".
+        
+        Areas that need improvement:
+        {result.improvement_areas}
+        
+        Challenges to address:
+        {result.challenges}
+        
+        Generate 5 high-quality REMEDIATION flashcards that directly address these specific weaknesses.
+        - Front: Concept, Question, or Term
+        - Back: Definition, Answer, or Explanation
+        - Tags: Add tags like 'REMEDIATION', '{current_milestone.title}'
+        
+        Output a FlashcardList object containing Flashcard objects.
+        """
+
+        try:
+            response = self.client.models.generate_content(
+                model=self.model_id,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    response_mime_type='application/json',
+                    response_schema=FlashcardList
+                )
+            )
+            flashcards = response.parsed.flashcards
+            anki_cards = [{'front': c.front, 'back': c.back} for c in flashcards]
+            
+            deck_name = f"REMEDIATION: {current_milestone.title}"
+            filename = f"deck_REMEDIATION_{current_milestone.title.replace(' ', '_')}.apkg"
+            
+            result_path = create_anki_deck(deck_name, anki_cards, filename=filename)
+            return result_path
+
+        except Exception as e:
+            print(f"Error generating remediation cards: {e}")
             raise e

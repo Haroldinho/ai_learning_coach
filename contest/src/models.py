@@ -29,6 +29,9 @@ class AssessmentResult(BaseModel):
     missed_concepts: List[str] = Field(default_factory=list)
 
     feedback: str = Field(..., description="Qualitative feedback for the learner")
+    excelled_at: Optional[str] = Field(None, description="Things the user excelled at")
+    improvement_areas: Optional[str] = Field(None, description="What the user didn't do well")
+    challenges: Optional[str] = Field(None, description="What the user could do to challenge themselves")
     timestamp: str = Field(..., description="ISO timestamp of the assessment")
 
 class Milestone(BaseModel):

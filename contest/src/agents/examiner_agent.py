@@ -99,7 +99,11 @@ class ExaminerAgent:
         1. Grade each answer as Correct or Incorrect.
         2. Calculate the final percentage score (0.0 to 1.0).
         3. Identify which concepts were known (Correct) and which were missed (Incorrect).
-        4. Provide encouraging but constructive feedback.
+        4. Provide qualitative feedback:
+           - In 'feedback', provide a general encouraging summary.
+           - In 'excelled_at', list specific things the user did well.
+           - In 'improvement_areas', list what the user didn't do well or missed.
+           - In 'challenges', suggest what the user could do to challenge themselves further.
         
         Output a valid AssessmentResult JSON object.
         """

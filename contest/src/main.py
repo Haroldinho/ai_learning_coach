@@ -127,7 +127,13 @@ def main():
         user_profil.assessment_history.append(result)
         memory.save_user_profile(user_profil)
         print(f"\n📊 Baseline Assessment: {result.score * 100:.1f}%")
-        print(f"📝 Feedback: {result.feedback}")
+        print(f"💡 Feedback: {result.feedback}")
+        if result.excelled_at:
+            print(f"🌟 Excelled At: {result.excelled_at}")
+        if result.improvement_areas:
+            print(f"📉 Areas to Improve: {result.improvement_areas}")
+        if result.challenges:
+            print(f"🚀 Challenges: {result.challenges}")
 
     # --- Phase 2: Loop ---
     while True:
@@ -194,6 +200,12 @@ def main():
         
         print(f"\n📊 Score: {exam_result.score * 100:.1f}%")
         print(f"💡 Feedback: {exam_result.feedback}")
+        if exam_result.excelled_at:
+            print(f"🌟 Excelled At: {exam_result.excelled_at}")
+        if exam_result.improvement_areas:
+            print(f"📉 Areas to Improve: {exam_result.improvement_areas}")
+        if exam_result.challenges:
+            print(f"🚀 Challenges: {exam_result.challenges}")
         
         # Step 5: Update State
         if exam_result.score >= 0.7:  # Pass threshold
@@ -205,7 +217,16 @@ def main():
             user_profil.milestone_start_date = None
         else:
             print(f"⚠️ Score too low to advance. Let's optimize the plan and try again in 3 days.")
-            # In a full system, Optimizer would see this and adjust the NEXT generation.
+            print("\n⚡ Generating targeted remediation materials...")
+            
+            remediation_deck_path = optimizer_agent.generate_remediation_cards(learning_goal, user_profil, exam_result)
+            
+            # Update profile with remediation deck
+            user_profil.current_deck_path = remediation_deck_path
+            user_profil.milestone_start_date = datetime.datetime.now().isoformat()
+            
+            print(f"✅ Remediation Deck saved to: {remediation_deck_path}")
+            print(f"👉 Please study these specific cards to master '{current_milestone.title}'.")
             
         memory.save_user_profile(user_profil)
         
