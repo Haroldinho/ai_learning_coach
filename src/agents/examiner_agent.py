@@ -103,7 +103,7 @@ class ExaminerAgent:
            - In 'feedback', provide a general encouraging summary.
            - In 'excelled_at', list specific things the user did well.
            - In 'improvement_areas', list what the user didn't do well or missed.
-           - In 'challenges', suggest what the user could do to challenge themselves further.
+           - In 'challenges', suggest what the user could do to challenge themselves further, going beyond the current learning plan.
         
         Output a valid AssessmentResult JSON object.
         """

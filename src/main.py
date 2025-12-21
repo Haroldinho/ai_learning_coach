@@ -208,7 +208,7 @@ def main():
             print(f"🚀 Challenges: {exam_result.challenges}")
         
         # Step 5: Update State
-        if exam_result.score >= 0.7:  # Pass threshold
+        if exam_result.score >= 0.8:  # Pass threshold
             print(f"✅ You passed '{current_milestone.title}'!")
             user_profil.completed_milestones.append(current_milestone.title)
             user_profil.current_milestone_index += 1
