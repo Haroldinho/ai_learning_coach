@@ -1,9 +1,0 @@
-google-genai
-python-dotenv
-tenacity
-genanki
-pydantic
-graphviz
-
-python-dotenv
-tenacity
