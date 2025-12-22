@@ -18,21 +18,39 @@ class GoalAgent:
         stop=stop_after_attempt(5),
         wait=wait_exponential(multiplier=2, min=4, max=60)
     )
-    def create_learning_plan(self, user_request: str) -> LearningGoal:
+    def create_learning_plan(self, user_request: str, existing_plan: str = None) -> LearningGoal:
         print(f"DEBUG: Generating initial plan for '{user_request}'")
         
-        initial_prompt = f"""
-        You are an expert Learning Coach.
-        The user wants to learn: "{user_request}".
+        if existing_plan:
+            initial_prompt = f"""
+            You are an expert Learning Coach.
+            The user wants to learn: "{user_request}".
+            
+            The user has provided an existing learning plan:
+            "{existing_plan}"
 
-        Your task:
-        1.  Convert this into a specific, measurable, achievable, relevant, and time-bound (SMART) goal.
-        2.  Break it down into a sequence of milestones.
-        3.  Estimate the total time required.
-        4.  Create a detailed structured plan.
+            Your task:
+            1.  Adapt this existing plan to the goal "{user_request}".
+            2.  ensure it is specific, measurable, achievable, relevant, and time-bound (SMART).
+            3.  Break it down into a sequence of milestones.
+            4.  Estimate the total time required.
+            5.  Create a detailed structured plan based on the provided input.
 
-        Output must be a valid JSON object matching the LearningGoal schema.
-        """
+            Output must be a valid JSON object matching the LearningGoal schema.
+            """
+        else:
+            initial_prompt = f"""
+            You are an expert Learning Coach.
+            The user wants to learn: "{user_request}".
+
+            Your task:
+            1.  Convert this into a specific, measurable, achievable, relevant, and time-bound (SMART) goal.
+            2.  Break it down into a sequence of milestones.
+            3.  Estimate the total time required.
+            4.  Create a detailed structured plan.
+
+            Output must be a valid JSON object matching the LearningGoal schema.
+            """
         
         current_plan = self._generate(initial_prompt)
         

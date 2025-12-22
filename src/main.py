@@ -102,7 +102,47 @@ def main():
         print("🧠 Analyzing your goal and creating a study plan...")
 
         
-        learning_goal = goal_agent.create_learning_plan(user_input)
+        existing_plan = None
+        has_plan = input("\nDo you already have a learning plan? (y/n): ").strip().lower()
+        if has_plan in ['y', 'yes']:
+            print("\nHow would you like to provide the plan?")
+            print("1. Paste text directly")
+            print("2. Read from file")
+            method = input("Choice (1/2): ").strip()
+
+            if method == "2":
+                while True:
+                    path = input("Enter absolute file path: ").strip()
+                    # Handle quotes around path
+                    path = path.strip("'\"")
+                    if os.path.exists(path):
+                        try:
+                            with open(path, 'r', encoding='utf-8') as f:
+                                existing_plan = f.read()
+                            print(f"✅ Loaded plan from {path}")
+                            break
+                        except Exception as e:
+                            print(f"❌ Error reading file: {e}")
+                    else:
+                        print("❌ File not found. Try again or type 'cancel' to skip.")
+                        if path.lower() == 'cancel':
+                            break
+            else:
+                print("Please paste your existing plan below. Type 'END' (or 'DONE') on a new line when finished:")
+                lines = []
+                while True:
+                    try:
+                        line = input()
+                        # more robust check for end signal
+                        if line.strip().upper() in ['END', 'DONE', "'END'", '"END"']:
+                            break
+                        lines.append(line)
+                    except EOFError:
+                        break
+                existing_plan = "\n".join(lines)
+                print("Received your plan. Adapting it to your goal...")
+
+        learning_goal = goal_agent.create_learning_plan(user_input, existing_plan=existing_plan)
         memory.save_learning_goal(learning_goal)
         print(f"\n✅ Plan Created: {learning_goal.smart_goal}")
         print(f"📅 Duration: {learning_goal.total_duration_days} days")
