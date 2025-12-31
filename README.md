@@ -6,60 +6,43 @@ Welcome to your **AI Learning Coach**! This project is an intelligent studying c
 
 The goal of this project is to act as an automated, full-cycle learning assistant. It starts by taking a topic you want to learn, creating a custom curriculum (SMART goal), generating study materials (Anki flashcards), and continuously testing your knowledge to ensure you are ready to advance to the next level.
 
-## 🤖 The Agents
+## 📁 Project Structure
 
-The system is powered by four specialized AI agents, each handling a specific phase of the learning lifecycle:
+This monorepo contains three main components:
 
-1.  **GoalAgent** (`src/agents/goal_agent.py`):
-    *   **Role**: The Planner.
-    *   **Function**: Takes your broad topic (e.g., "Quantum Physics") and converts it into a concrete, 30-day SMART learning plan.
-    *   **Output**: A structured schedule with milestones and estimated timeframes.
+| Component | Description | Location |
+|-----------|-------------|----------|
+| **Python CLI** | Core AI agent engine with command-line interface | [`src/`](src/) |
+| **Backend API** | FastAPI server for the mobile app | [`backend/`](backend/) |
+| **iOS App** | SwiftUI app for iPhone, iPad, and Mac | [`ios/`](ios/) |
 
-2.  **DiagnosticAgent** (`src/agents/diagnostic_agent.py`):
-    *   **Role**: The Assessor.
-    *   **Function**: Before you start, it generates a diagnostic quiz to check your current knowledge level.
-    *   **Utility**: Helps establish a baseline so you know where you stand.
-
-3.  **OptimizerAgent** (`src/agents/optimizer_agent.py`):
-    *   **Role**: The content Creator.
-    *   **Function**: For each milestone, it generates high-quality study materials, specifically formatted for *Spaced Repetition*.
-    *   **Output**: Creates ready-to-import Anki Flashcard packages (`.apkg`).
-
-4.  **ExaminerAgent** (`src/agents/examiner_agent.py`):
-    *   **Role**: The Teacher.
-    *   **Function**: After your study period, it creates a challenging exam for the current milestone. It grades your answers, provides feedback, and decides if you have passed or need to review.
-    *   **Feature**: Includes *Active Recall* questions from previous milestones to ensure long-term retention.
-
-## 🚀 How to Run the Code
-
-### Prerequisites
-*   Python 3.8+
-*   A Google Cloud Project with Gemini API access.
-*   An API Key saved in a `.env` file.
-
-### Installation
-
-1.  Clone the repository.
-2.  Install dependencies:
-    ```bash
-    pip install -r requirements.txt
-    ```
-3.  Set up your environment variables:
-    *   Create a `.env` file in the root directory.
-    *   Add your API key:
-        ```env
-        GOOGLE_API_KEY=your_api_key_here
-        ```
-
-### Running the Application
-
-Execute the main script from the root directory:
-
-```bash
-python src/main.py
+```
+ai-learning-coach/
+├── src/                 # Python CLI & AI Agents
+│   ├── agents/          # GoalAgent, DiagnosticAgent, OptimizerAgent, ExaminerAgent
+│   ├── main.py          # CLI entry point
+│   └── ...
+├── backend/             # FastAPI backend for iOS app
+│   ├── main.py          # API endpoints
+│   └── requirements.txt
+├── ios/                 # SwiftUI iOS/iPadOS/macOS app
+│   ├── AILearningCoach/
+│   └── AILearningCoach.xcodeproj
+├── prompts/             # System prompts for AI agents
+├── figures/             # Architecture diagrams and images
+└── .coin_cache/         # Learning project data (git-ignored)
 ```
 
-Follow the on-screen prompts to enter your learning topic and interact with the coach.
+## 🤖 The Agents
+
+The system is powered by four specialized AI agents. See [`src/README.md`](src/README.md) for detailed documentation.
+
+| Agent | Role | Function |
+|-------|------|----------|
+| **GoalAgent** | 🎯 Planner | Creates a 30-day SMART learning plan |
+| **DiagnosticAgent** | 🩺 Assessor | Generates diagnostic quizzes |
+| **OptimizerAgent** | ⚡ Content Creator | Generates Anki flashcards |
+| **ExaminerAgent** | 📝 Teacher | Creates exams & provides feedback |
 
 ## 🏗️ System Architecture
 
@@ -110,18 +93,75 @@ graph TD
 ```
 </details>
 
-## 🧠 Memory & State Management
+---
 
-The project uses a simple file-based persistence system to maintain state between sessions.
+## 🚀 Getting Started
 
-*   **Location**: All state is stored in the `.coin_cache` directory.
-*   **Structure**: Each learning project has its own dedicated subdirectory inside `.coin_cache` (e.g., `.coin_cache/learn_quantum_physics`).
-*   **Mechanism**: The `MemoryManager` class (`src/memory.py`) serializes the internal Pydantic models to JSON files.
-*   **Files**:
-    *   `learning_goal.json`: Stores the current active SMART goal and its milestones.
-    *   `user_profile.json`: Tracks the user's progress, including completed milestones, assessment history, and concept mastery levels.
+### Prerequisites
 
-This structure allows you to maintain **multiple independent learning projects**. On startup, the system will ask if you want to continue an existing project or start a new one. It also automatically attempts to migrate any legacy data from the root `.coin_cache` folder into a project-specific folder.
+*   Python 3.8+
+*   A Google Cloud Project with Gemini API access
+*   An API Key saved in a `.env` file
+
+### Installation
+
+1.  Clone the repository.
+2.  Install dependencies:
+    ```bash
+    pip install -r requirements.txt
+    ```
+3.  Set up your environment variables:
+    *   Create a `.env` file in the root directory.
+    *   Add your API key:
+        ```env
+        GOOGLE_API_KEY=your_api_key_here
+        ```
+
+---
+
+## 💻 Python CLI
+
+The CLI provides direct access to the AI agents through an interactive terminal interface.
+
+```bash
+python src/main.py
+```
+
+Follow the on-screen prompts to enter your learning topic and interact with the coach.
+
+See [`src/README.md`](src/README.md) for more details on the agents and memory management.
+
+---
+
+## 📱 iOS / iPadOS / macOS App
+
+A beautiful SwiftUI app that provides the same learning experience on Apple devices.
+
+### Features
+
+*   📚 **Flashcard Study** - SM-2 spaced repetition algorithm with offline support
+*   🩺 **Diagnostic Mode** - AI-graded knowledge assessments
+*   📝 **Examiner Mode** - Milestone assessments with 80% pass threshold
+
+### Running the App
+
+1.  **Start the backend server:**
+    ```bash
+    cd backend
+    pip install -r requirements.txt
+    uvicorn main:app --reload --host 0.0.0.0 --port 8000
+    ```
+
+2.  **Open the iOS project in Xcode:**
+    ```
+    ios/AILearningCoach.xcodeproj
+    ```
+
+3.  Select your target device and run (Cmd + R)
+
+See [`ios/README.md`](ios/README.md) for detailed iOS documentation.
+
+---
 
 ## 📦 Anki Packages
 
@@ -134,7 +174,13 @@ When the **OptimizerAgent** generates study materials, it saves them as Anki Pac
 2.  Double-click the file to import it into your [Anki](https://apps.ankiweb.net/) desktop application.
 3.  Study the cards for the recommended duration before taking the exam.
 
+---
 
+## 📄 License
+
+This project is for personal learning purposes.
+
+---
 
 **DISCLAIMER:**
 The code was vibe-coded at >90% using Gemini 3.0 and Antigravity.
