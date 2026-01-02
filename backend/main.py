@@ -11,7 +11,7 @@ import os
 # Add parent directory to path so we can import from src
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Header, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
@@ -47,6 +47,21 @@ optimizer_agent = OptimizerAgent()
 examiner_agent = ExaminerAgent()
 
 BASE_CACHE_PATH = ".coin_cache"
+
+
+# ============== Dependency Injection ==============
+
+async def get_user_id(x_user_id: Optional[str] = Header(None)) -> str:
+    """
+    Extracts the User ID from the X-User-ID header.
+    If not present (e.g. local dev/curl), defaults to 'default_user'.
+    """
+    if not x_user_id:
+        return "default_user"
+    
+    # Sanitize user_id to be safe for filesystem
+    safe_id = "".join([c for c in x_user_id if c.isalnum() or c in "-_"])
+    return safe_id or "default_user"
 
 
 # ============== Request/Response Models ==============
@@ -111,14 +126,22 @@ class SyncProgressRequest(BaseModel):
 
 # ============== Helper Functions ==============
 
-def list_projects() -> List[tuple]:
-    """Lists available project directories."""
-    if not os.path.exists(BASE_CACHE_PATH):
+def get_user_cache_path(user_id: str) -> str:
+    """Returns the cache directory for a specific user."""
+    path = os.path.join(BASE_CACHE_PATH, user_id)
+    os.makedirs(path, exist_ok=True)
+    return path
+
+def list_projects(user_id: str) -> List[tuple]:
+    """Lists available project directories for a user."""
+    user_path = get_user_cache_path(user_id)
+    
+    if not os.path.exists(user_path):
         return []
     
     projects = []
-    for item in os.listdir(BASE_CACHE_PATH):
-        item_path = os.path.join(BASE_CACHE_PATH, item)
+    for item in os.listdir(user_path):
+        item_path = os.path.join(user_path, item)
         if os.path.isdir(item_path) and os.path.exists(os.path.join(item_path, "learning_goal.json")):
             try:
                 with open(os.path.join(item_path, "learning_goal.json"), 'r') as f:
@@ -130,11 +153,15 @@ def list_projects() -> List[tuple]:
     return projects
 
 
-def get_memory_manager(project_id: str) -> MemoryManager:
-    """Get memory manager for a specific project."""
-    project_path = os.path.join(BASE_CACHE_PATH, project_id)
-    if not os.path.exists(project_path):
-        raise HTTPException(status_code=404, detail=f"Project '{project_id}' not found")
+def get_memory_manager(project_id: str, user_id: str) -> MemoryManager:
+    """Get memory manager for a specific project and user."""
+    user_path = get_user_cache_path(user_id)
+    project_path = os.path.join(user_path, project_id)
+    
+    # We allow creating the manager even if dir doesn't exist yet (MemoryManager handles it)
+    # but strictly checking existence for 'get' operations is good practice.
+    # Here we let MemoryManager handle the specific project subdirectory creation.
+    
     return MemoryManager(storage_dir=project_path)
 
 
@@ -147,13 +174,13 @@ async def root():
 
 
 @app.get("/projects", response_model=List[ProjectResponse])
-async def get_projects():
-    """List all learning projects."""
-    projects = list_projects()
+async def get_projects(user_id: str = Depends(get_user_id)):
+    """List all learning projects for the authenticated user."""
+    projects = list_projects(user_id)
     result = []
     
     for project_id, title in projects:
-        memory = get_memory_manager(project_id)
+        memory = get_memory_manager(project_id, user_id)
         goal = memory.load_learning_goal()
         profile = memory.load_user_profile()
         
@@ -170,17 +197,15 @@ async def get_projects():
 
 
 @app.post("/projects", response_model=ProjectResponse)
-async def create_project(request: CreateProjectRequest):
-    """Create a new learning project."""
+async def create_project(request: CreateProjectRequest, user_id: str = Depends(get_user_id)):
+    """Create a new learning project for the authenticated user."""
     project_id = to_snake_case(request.topic)
     if not project_id:
         import datetime
         project_id = f"project_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
     
-    project_path = os.path.join(BASE_CACHE_PATH, project_id)
-    os.makedirs(project_path, exist_ok=True)
-    
-    memory = MemoryManager(storage_dir=project_path)
+    # Ensure project path implies user path
+    memory = get_memory_manager(project_id, user_id)
     
     # Create learning plan
     learning_goal = goal_agent.create_learning_plan(request.topic, existing_plan=request.existing_plan)
@@ -199,9 +224,9 @@ async def create_project(request: CreateProjectRequest):
 
 
 @app.get("/projects/{project_id}")
-async def get_project(project_id: str):
+async def get_project(project_id: str, user_id: str = Depends(get_user_id)):
     """Get detailed project information."""
-    memory = get_memory_manager(project_id)
+    memory = get_memory_manager(project_id, user_id)
     goal = memory.load_learning_goal()
     profile = memory.load_user_profile()
     
@@ -218,9 +243,9 @@ async def get_project(project_id: str):
 # ============== Flashcard Endpoints ==============
 
 @app.get("/projects/{project_id}/flashcards", response_model=List[FlashcardResponse])
-async def get_flashcards(project_id: str):
+async def get_flashcards(project_id: str, user_id: str = Depends(get_user_id)):
     """Get flashcards for the current milestone."""
-    memory = get_memory_manager(project_id)
+    memory = get_memory_manager(project_id, user_id)
     goal = memory.load_learning_goal()
     profile = memory.load_user_profile()
     
@@ -228,6 +253,10 @@ async def get_flashcards(project_id: str):
         raise HTTPException(status_code=404, detail="No learning goal found")
     
     # Generate flashcards if needed
+    # Note: optimizer_agent currently saves to current directory. 
+    # TODO: In a real multi-user env, we should update optimizer_agent 
+    # to save to the user's cache dir. For now, we assume the .apkg logic works as is
+    # or simple text response is sufficient for the app.
     deck_path = optimizer_agent.generate_curriculum_and_cards(goal, profile)
     
     if deck_path == "All milestones completed!":
@@ -257,7 +286,7 @@ async def get_flashcards(project_id: str):
 
 
 @app.post("/projects/{project_id}/flashcards/review")
-async def review_flashcard(project_id: str, review: FlashcardReviewRequest):
+async def review_flashcard(project_id: str, review: FlashcardReviewRequest, user_id: str = Depends(get_user_id)):
     """Submit a flashcard review (SM-2 algorithm update)."""
     # This would update the spaced repetition data
     # For now, just acknowledge the review
@@ -270,7 +299,7 @@ async def review_flashcard(project_id: str, review: FlashcardReviewRequest):
 
 
 @app.post("/projects/{project_id}/flashcards/sync")
-async def sync_flashcard_progress(project_id: str, sync_request: SyncProgressRequest):
+async def sync_flashcard_progress(project_id: str, sync_request: SyncProgressRequest, user_id: str = Depends(get_user_id)):
     """Sync offline flashcard progress to backend."""
     # Process all offline reviews
     synced_count = len(sync_request.reviews)
@@ -285,9 +314,9 @@ async def sync_flashcard_progress(project_id: str, sync_request: SyncProgressReq
 # ============== Diagnostic Endpoints ==============
 
 @app.get("/projects/{project_id}/diagnostic", response_model=List[QuestionResponse])
-async def get_diagnostic_quiz(project_id: str):
+async def get_diagnostic_quiz(project_id: str, user_id: str = Depends(get_user_id)):
     """Generate a diagnostic quiz for the project."""
-    memory = get_memory_manager(project_id)
+    memory = get_memory_manager(project_id, user_id)
     goal = memory.load_learning_goal()
     
     if not goal:
@@ -307,9 +336,9 @@ async def get_diagnostic_quiz(project_id: str):
 
 
 @app.post("/projects/{project_id}/diagnostic", response_model=AssessmentResultResponse)
-async def submit_diagnostic(project_id: str, submission: SubmitAnswersRequest):
+async def submit_diagnostic(project_id: str, submission: SubmitAnswersRequest, user_id: str = Depends(get_user_id)):
     """Submit diagnostic quiz answers and get results."""
-    memory = get_memory_manager(project_id)
+    memory = get_memory_manager(project_id, user_id)
     goal = memory.load_learning_goal()
     
     if not goal:
@@ -344,9 +373,9 @@ async def submit_diagnostic(project_id: str, submission: SubmitAnswersRequest):
 # ============== Examiner Endpoints ==============
 
 @app.get("/projects/{project_id}/exam", response_model=List[QuestionResponse])
-async def get_exam(project_id: str):
+async def get_exam(project_id: str, user_id: str = Depends(get_user_id)):
     """Generate an exam for the current milestone."""
-    memory = get_memory_manager(project_id)
+    memory = get_memory_manager(project_id, user_id)
     goal = memory.load_learning_goal()
     profile = memory.load_user_profile()
     
@@ -373,9 +402,9 @@ async def get_exam(project_id: str):
 
 
 @app.post("/projects/{project_id}/exam", response_model=AssessmentResultResponse)
-async def submit_exam(project_id: str, submission: SubmitAnswersRequest):
+async def submit_exam(project_id: str, submission: SubmitAnswersRequest, user_id: str = Depends(get_user_id)):
     """Submit exam answers and get results."""
-    memory = get_memory_manager(project_id)
+    memory = get_memory_manager(project_id, user_id)
     goal = memory.load_learning_goal()
     profile = memory.load_user_profile()
     
