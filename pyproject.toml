@@ -1,0 +1,15 @@
+[project]
+name = "2025-kaggle5daysofai"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "genanki>=0.13.1",
+    "google-adk>=1.18.0",
+    "google-genai>=1.49.0",
+    "graphviz>=0.21",
+    "ipykernel>=7.1.0",
+    "pydantic>=2.12.4",
+    "python-dotenv>=1.2.1",
+]
