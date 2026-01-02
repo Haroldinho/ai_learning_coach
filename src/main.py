@@ -143,12 +143,30 @@ def main():
                 print("Received your plan. Adapting it to your goal...")
 
         learning_goal = goal_agent.create_learning_plan(user_input, existing_plan=existing_plan)
+        
+        # --- Plan Approval Loop (Moved from Agent to CLI) ---
+        while True:
+            # Display Plan Summary
+            print(f"\n📋 Proposed Plan: {learning_goal.smart_goal}")
+            print(f"⏱️  Duration: {learning_goal.total_duration_days} days")
+            print("Milestones:")
+            for i, m in enumerate(learning_goal.milestones):
+                print(f"  {i+1}. {m.title} ({m.duration_days} days): {m.description}")
+            
+            # User Feedback
+            print("\nDoes this plan look good to you?")
+            print("  [Y] Yes, let's start!")
+            print("  [Any text] No, please change... (type your feedback)")
+            user_feedback = input("> ").strip()
+            
+            if user_feedback.lower() in ['y', 'yes', '']:
+                break
+            
+            print("\n🔄 Updating plan based on your feedback...")
+            learning_goal = goal_agent.update_learning_plan(learning_goal, user_feedback)
+
         memory.save_learning_goal(learning_goal)
-        print(f"\n✅ Plan Created: {learning_goal.smart_goal}")
-        print(f"📅 Duration: {learning_goal.total_duration_days} days")
-        print("Milestones:")
-        for i, m in enumerate(learning_goal.milestones):
-            print(f"  {i+1}. {m.title}")
+        print(f"\n✅ Plan Finalized: {learning_goal.smart_goal}")
 
         print("\n🩺 Let's assess your starting baseline...")
         questions = diagnostic_agent.generate_quiz(learning_goal)

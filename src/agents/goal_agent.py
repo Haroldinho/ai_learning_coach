@@ -52,27 +52,8 @@ class GoalAgent:
             Output must be a valid JSON object matching the LearningGoal schema.
             """
         
-        current_plan = self._generate(initial_prompt)
-        
-        while True:
-            # Display Plan Summary
-            print(f"\n📋 Proposed Plan: {current_plan.smart_goal}")
-            print(f"⏱️  Duration: {current_plan.total_duration_days} days")
-            print("Milestones:")
-            for i, m in enumerate(current_plan.milestones):
-                print(f"  {i+1}. {m.title} ({m.duration_days} days): {m.description}")
-            
-            # User Feedback
-            print("\nDoes this plan look good to you?")
-            print("  [Y] Yes, let's start!")
-            print("  [Any text] No, please change... (type your feedback)")
-            user_feedback = input("> ").strip()
-            
-            if user_feedback.lower() in ['y', 'yes', '']:
-                return current_plan
-            
-            print("\n🔄 Updating plan based on your feedback...")
-            current_plan = self._update_learning_plan(current_plan, user_feedback)
+        return self._generate(initial_prompt)
+
 
     @retry(
         retry=retry_if_exception_type(ClientError),
@@ -94,7 +75,11 @@ class GoalAgent:
             print(f"Error generating learning plan: {e}")
             raise e
 
-    def _update_learning_plan(self, current_plan: LearningGoal, feedback: str) -> LearningGoal:
+    def update_learning_plan(self, current_plan: LearningGoal, feedback: str) -> LearningGoal:
+        """
+        Updates an existing plan based on user feedback.
+        Stateless: takes current plan and feedback, returns a new plan.
+        """
         prompt = f"""
         You are an expert Learning Coach.
         You previously generated a learning plan, but the user has some feedback.
