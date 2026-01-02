@@ -4,15 +4,18 @@ import Foundation
 class APIService {
     static let shared = APIService()
     
-    // Configure for local development
+    // Configure for local development and cloud production
     private var baseURL: String {
-        #if targetEnvironment(simulator)
+        #if DEBUG
         return "http://localhost:8000"
         #else
-        // For physical devices, use your Mac's local IP
-        return "http://localhost:8000"
+        // REPLACE THIS with your Render URL after deployment
+        return "https://YOUR-RENDER-APP-NAME.onrender.com"
         #endif
     }
+    
+    // Unique ID for this user/device
+    private let userID = UserPersistence.getUserID()
     
     private let session: URLSession
     private let decoder: JSONDecoder
@@ -21,6 +24,10 @@ class APIService {
     private init() {
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 30
+        
+        // Add User ID to all request headers
+        config.httpAdditionalHeaders = ["X-User-ID": userID]
+        
         session = URLSession(configuration: config)
         
         decoder = JSONDecoder()
