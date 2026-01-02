@@ -1,0 +1,21 @@
+# General Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environment
+venv/
+.venv/
+env/
+
+# Environment Variables (Secrets)
+.env
+
+# MacOS
+.DS_Store
+
+# Project Logic & State (User Data)
+.coin_cache/
+
+# Generated Artifacts
+*.apkg

@@ -1,0 +1,106 @@
+instruction="""
+You are a specialized Google Apps Script developer. Your task is to generate complete, production-ready Google Apps Script code (.gs) for an automated invoice tracking system.
+
+## System Overview
+Create a Gmail-triggered pipeline that automatically:
+1. Monitors incoming emails to a single email address
+2. Filters emails that haven't been processed yet (using Gmail labels)
+3. Extracts invoice data from email content and attachments
+4. Populates a Google Sheet with structured invoice information
+5. Saves attachments to Google Drive
+6. Labels processed emails to prevent duplicate processing
+
+## Email Filtering Criteria
+Process emails that meet ALL of the following conditions:
+- Subject line contains at least one of:
+  * "Invoice" or "Invoices"
+  * "Account"
+  * "Acct" followed by an account number
+  * "Debit Memo"
+  * "Statement" with an account number
+- Email has at least one attachment of type: PDF, PNG, or Word document (.doc, .docx)
+- Email does NOT have the "a-p-automated" label (regardless of read/unread status)
+
+## Data Extraction Requirements
+Extract the following fields when available (use "N/A" if not found):
+1. **Email Metadata:**
+   - Date email was received (format: YYYY-MM-DD HH:MM:SS)
+   - Sender email address
+   
+2. **Invoice Identifiers:**
+   - Account Number
+   - Statement Number
+   - Invoice Number
+   - Order Number
+   - PO (Purchase Order) Number
+   
+3. **Financial Information:**
+   - Subtotal
+   - Total
+   - Invoice Due Date
+
+## Technical Requirements
+1. **Gmail Trigger:**
+   - Use Gmail's onNewMail trigger or time-driven trigger to check for new emails
+   - Process emails that match the filtering criteria
+
+2. **Label Management:**
+   - Before processing: Check if email has "a-p-automated" label - if it does, skip the email
+   - After successful processing: Add the "a-p-automated" label to the email to mark it as processed
+   - Create the "a-p-automated" label if it doesn't exist
+   - Only add the label after all operations complete successfully (sheet update AND drive save)
+
+3. **Data Extraction Methods:**
+   - Parse email subject and body text using regex patterns
+   - For PDF attachments: Extract text using Google Apps Script's Drive API or OCR
+   - For image attachments: Use OCR capabilities (consider Google Cloud Vision API if needed)
+   - For Word documents: Extract text content
+   - Use robust regex patterns to find account numbers, invoice numbers, dates, and monetary values
+
+4. **Google Sheets Integration:**
+   - Create or update a Google Sheet with the following columns (in order):
+     [Date Received, Sender Email, Account Number, Statement Number, Invoice Number, Order Number, PO, Subtotal, Total, Invoice Due Date, Attachment Drive URL, Processed Date]
+   - Append new rows for each processed invoice
+   - Include error handling for missing or invalid data
+   - Add data validation to prevent duplicate entries (check invoice number + sender email)
+
+5. **Google Drive Integration:**
+   - Save all attachments (PDF, PNG, Word docs) to a specific Google Drive folder
+   - Use a consistent naming convention: "InvoiceNumber_DateReceived_OriginalFilename" or "SenderEmail_DateReceived_OriginalFilename" if invoice number unavailable
+   - Store the Drive file URL in the Google Sheet for reference
+   - Create the folder if it doesn't exist
+
+6. **Error Handling:**
+   - Log errors to a separate sheet or use Logger for debugging
+   - Handle cases where extraction fails (partial data is acceptable)
+   - Skip emails that don't meet criteria without errors
+   - Handle multiple attachments per email appropriately
+   - If processing fails at any step, do NOT add the "a-p-automated" label (so it can be retried)
+
+7. **Processing Workflow:**
+   - Check if email has "a-p-automated" label → if yes, skip
+   - Verify email matches subject/attachment criteria → if no, skip
+   - Extract data from email and attachments
+   - Save data to Google Sheet
+   - Save attachments to Google Drive
+   - Only after all steps succeed: Add "a-p-automated" label to email
+
+8. **Code Quality:**
+   - Include clear comments explaining each function
+   - Use meaningful variable names
+   - Structure code into logical functions (e.g., checkIfProcessed, extractDataFromEmail, parseInvoiceData, saveToSheet, saveToDrive, markAsProcessed)
+   - Include helper functions for regex matching and data validation
+
+## Output Format
+Generate complete, runnable Google Apps Script code that:
+- Can be copied directly into Google Apps Script editor
+- Includes all necessary functions and triggers
+- Has proper error handling and logging
+- Is well-commented and maintainable
+
+## Important Notes
+- The script should be self-contained and not require external dependencies beyond Google Apps Script services
+- Consider performance: batch operations where possible
+- Ensure the script handles edge cases (multiple invoices in one email, malformed data, etc.)
+- The "a-p-automated" label acts as a processing flag - emails with this label should never be processed again
+"""
