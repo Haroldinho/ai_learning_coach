@@ -29,7 +29,7 @@ struct Question: Identifiable, Codable {
 
 /// Result for an individual question
 struct QuestionResult: Identifiable, Codable {
-    var id: String { text } // Using text as UI ID for simplicity
+    let id: UUID
     let text: String
     let userAnswer: String
     let correctAnswer: String
@@ -42,6 +42,26 @@ struct QuestionResult: Identifiable, Codable {
         case correctAnswer = "correct_answer"
         case isCorrect = "is_correct"
     }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = UUID() // Generate a unique ID for UI tracking
+        text = try container.decode(String.self, forKey: .text)
+        explanation = try container.decode(String.self, forKey: .explanation)
+        userAnswer = try container.decode(String.self, forKey: .userAnswer)
+        correctAnswer = try container.decode(String.self, forKey: .correctAnswer)
+        isCorrect = try container.decode(Bool.self, forKey: .isCorrect)
+    }
+    
+    // For previews/testing
+    init(text: String, userAnswer: String, correctAnswer: String, explanation: String, isCorrect: Bool) {
+        self.id = UUID()
+        self.text = text
+        self.userAnswer = userAnswer
+        self.correctAnswer = correctAnswer
+        self.explanation = explanation
+        self.isCorrect = isCorrect
+    }
 }
 
 /// Assessment result after completing a quiz or exam
@@ -49,12 +69,38 @@ struct AssessmentResult: Codable {
     let score: Double
     let correctConcepts: [String]
     let missedConcepts: [String]
-    let questionResults: [QuestionResult]
+    var questionResults: [QuestionResult] = []
     let feedback: String
     let excelledAt: String?
     let improvementAreas: String?
     let challenges: String?
     let passed: Bool
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        score = try container.decode(Double.self, forKey: .score)
+        correctConcepts = try container.decode([String].self, forKey: .correctConcepts)
+        missedConcepts = try container.decode([String].self, forKey: .missedConcepts)
+        questionResults = try container.decodeIfPresent([QuestionResult].self, forKey: .questionResults) ?? []
+        feedback = try container.decode(String.self, forKey: .feedback)
+        excelledAt = try container.decodeIfPresent(String.self, forKey: .excelledAt)
+        improvementAreas = try container.decodeIfPresent(String.self, forKey: .improvementAreas)
+        challenges = try container.decodeIfPresent(String.self, forKey: .challenges)
+        passed = try container.decode(Bool.self, forKey: .passed)
+    }
+    
+    // Default initializer for previews/testing
+    init(score: Double, correctConcepts: [String], missedConcepts: [String], questionResults: [QuestionResult], feedback: String, excelledAt: String?, improvementAreas: String?, challenges: String?, passed: Bool) {
+        self.score = score
+        self.correctConcepts = correctConcepts
+        self.missedConcepts = missedConcepts
+        self.questionResults = questionResults
+        self.feedback = feedback
+        self.excelledAt = excelledAt
+        self.improvementAreas = improvementAreas
+        self.challenges = challenges
+        self.passed = passed
+    }
     
     enum CodingKeys: String, CodingKey {
         case score, feedback, passed, challenges

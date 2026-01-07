@@ -159,7 +159,12 @@ def list_projects(user_id: str) -> List[tuple]:
         return []
     
     projects = []
+    seen_ids = set()
+    
     for item in os.listdir(user_path):
+        if item in seen_ids:
+            continue
+            
         item_path = os.path.join(user_path, item)
         if os.path.isdir(item_path) and os.path.exists(os.path.join(item_path, "learning_goal.json")):
             try:
@@ -167,8 +172,10 @@ def list_projects(user_id: str) -> List[tuple]:
                     data = json.load(f)
                     title = data.get("smart_goal", item)
                     projects.append((item, title))
+                    seen_ids.add(item)
             except Exception:
-                projects.append((item, item))
+                 projects.append((item, item))
+                 seen_ids.add(item)
     return projects
 
 
