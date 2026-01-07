@@ -28,6 +28,9 @@ struct ResultView: View {
                 // Feedback sections
                 feedbackSections
                 
+                // Question Results List
+                questionResultsList
+                
                 // Action button
                 Button("Continue") {
                     onDismiss()
@@ -175,6 +178,50 @@ struct ResultView: View {
         }
     }
     
+    private var questionResultsList: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Detailed Breakdown")
+                .font(.headline)
+                .foregroundColor(.primaryText)
+                .padding(.horizontal)
+            
+            ForEach(result.questionResults) { qResult in
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack(alignment: .top) {
+                        Image(systemName: qResult.isCorrect ? "checkmark.circle.fill" : "xmark.circle.fill")
+                            .foregroundColor(qResult.isCorrect ? Color.success : Color.error)
+                        
+                        Text(qResult.text)
+                            .font(.body)
+                            .foregroundColor(.primaryText)
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Your Answer: \(qResult.userAnswer)")
+                            .font(.subheadline)
+                            .foregroundColor(qResult.isCorrect ? Color.success : Color.error)
+                        
+                        if !qResult.isCorrect {
+                            Text("Correct Answer: \(qResult.correctAnswer)")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .foregroundColor(.primaryText)
+                        }
+                        
+                        Text(qResult.explanation)
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                            .italic()
+                            .padding(.top, 2)
+                    }
+                    .padding(.leading, 28)
+                }
+                .padding()
+                .cardStyle()
+            }
+        }
+    }
+    
     // MARK: - Computed Properties
     
     private var scoreColor: Color {
@@ -235,6 +282,10 @@ struct FeedbackCard: View {
             score: 0.85,
             correctConcepts: ["Concept 1", "Concept 2", "Concept 3"],
             missedConcepts: ["Concept 4"],
+            questionResults: [
+                QuestionResult(text: "What is Concept 1?", userAnswer: "Correct Answer", correctAnswer: "Correct Answer", explanation: "Explanation for Concept 1", isCorrect: true),
+                QuestionResult(text: "What is Concept 4?", userAnswer: "Wrong Answer", correctAnswer: "Right Answer", explanation: "Explanation for Concept 4", isCorrect: false)
+            ],
             feedback: "Great performance! You've demonstrated solid understanding of the core concepts.",
             excelledAt: "You showed excellent grasp of fundamental principles and applied them correctly.",
             improvementAreas: "Consider reviewing advanced topics for deeper understanding.",

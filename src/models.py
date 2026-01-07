@@ -23,10 +23,18 @@ class Question(BaseModel):
 class Quiz(BaseModel):
     questions: List[Question]
 
+class QuestionResult(BaseModel):
+    text: str
+    user_answer: str
+    correct_answer: str
+    explanation: str
+    is_correct: bool
+
 class AssessmentResult(BaseModel):
     score: float = Field(..., description="Percentage score (0-1.0)")
     correct_concepts: List[str] = Field(default_factory=list)
     missed_concepts: List[str] = Field(default_factory=list)
+    question_results: List[QuestionResult] = Field(default_factory=list)
 
     feedback: str = Field(..., description="Qualitative feedback for the learner")
     excelled_at: Optional[str] = Field(None, description="Things the user excelled at")

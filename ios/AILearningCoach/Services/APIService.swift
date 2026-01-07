@@ -4,15 +4,12 @@ import Foundation
 class APIService {
     static let shared = APIService()
     
-    // Configure for local development and cloud production
-    private var baseURL: String {
-        #if DEBUG
-        return "http://localhost:8000"
-        #else
-        // REPLACE THIS with your Render URL after deployment
-        return "https://ai-learning-coach-8iz1.onrender.com"
-        #endif
-    }
+    // API Configuration
+    private static let renderURL = "https://ai-learning-coach-8iz1.onrender.com"
+    private static let localURL = "http://localhost:8000"
+    
+    // The currently active URL, defaults to Render
+    private(set) var baseURL: String = renderURL
     
     // Unique ID for this user/device
     private let userID = UserPersistence.getUserID()
@@ -179,9 +176,28 @@ class APIService {
         return try decoder.decode(AssessmentResult.self, from: data)
     }
     
-    /// Check if backend is reachable
+    /// Check if backend is reachable and switch to fallback if necessary
     func checkConnection() async -> Bool {
-        guard let url = URL(string: "\(baseURL)/") else { return false }
+        // 1. Try currently active URL
+        if await verifyURL(baseURL) {
+            return true
+        }
+        
+        // 2. If it fails, try the fallback
+        let fallbackURL = (baseURL == APIService.renderURL) ? APIService.localURL : APIService.renderURL
+        print("⚠️ Primary API (\(baseURL)) unreachable. Trying fallback: \(fallbackURL)")
+        
+        if await verifyURL(fallbackURL) {
+            baseURL = fallbackURL
+            print("✅ Switched to fallback API: \(baseURL)")
+            return true
+        }
+        
+        return false
+    }
+    
+    private func verifyURL(_ urlString: String) async -> Bool {
+        guard let url = URL(string: "\(urlString)/") else { return false }
         
         do {
             let (_, response) = try await session.data(from: url)

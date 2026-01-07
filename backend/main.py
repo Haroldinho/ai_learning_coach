@@ -16,6 +16,16 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional
 import json
+import uuid
+import logging
+from datetime import datetime
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger("learning-coach-api")
 
 from src.memory import MemoryManager
 from src.agents.goal_agent import GoalAgent
@@ -107,10 +117,19 @@ class SubmitAnswersRequest(BaseModel):
     answers: List[str]
 
 
+class QuestionResultResponse(BaseModel):
+    text: str
+    user_answer: str
+    correct_answer: str
+    explanation: str
+    is_correct: bool
+
+
 class AssessmentResultResponse(BaseModel):
     score: float
     correct_concepts: List[str]
     missed_concepts: List[str]
+    question_results: List[QuestionResultResponse]
     feedback: str
     excelled_at: Optional[str]
     improvement_areas: Optional[str]
@@ -170,12 +189,14 @@ def get_memory_manager(project_id: str, user_id: str) -> MemoryManager:
 @app.get("/")
 async def root():
     """Health check endpoint."""
+    logger.info("Health check requested")
     return {"status": "ok", "message": "AI Learning Coach API is running"}
 
 
 @app.get("/projects", response_model=List[ProjectResponse])
 async def get_projects(user_id: str = Depends(get_user_id)):
     """List all learning projects for the authenticated user."""
+    logger.info(f"Listing projects for user: {user_id}")
     projects = list_projects(user_id)
     result = []
     
@@ -184,9 +205,12 @@ async def get_projects(user_id: str = Depends(get_user_id)):
         goal = memory.load_learning_goal()
         profile = memory.load_user_profile()
         
+        # Use filename as title if goal not loaded yet
+        display_title = goal.smart_goal if goal else title
+        
         result.append(ProjectResponse(
             id=project_id,
-            title=title[:60] + "..." if len(title) > 60 else title,
+            title=display_title[:60] + "..." if len(display_title) > 60 else display_title,
             smart_goal=goal.smart_goal if goal else "",
             total_duration_days=goal.total_duration_days if goal else 0,
             current_milestone_index=profile.current_milestone_index,
@@ -198,13 +222,11 @@ async def get_projects(user_id: str = Depends(get_user_id)):
 
 @app.post("/projects", response_model=ProjectResponse)
 async def create_project(request: CreateProjectRequest, user_id: str = Depends(get_user_id)):
-    """Create a new learning project for the authenticated user."""
-    project_id = to_snake_case(request.topic)
-    if not project_id:
-        import datetime
-        project_id = f"project_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}"
+    """Create a new learning project with a short UUID-based ID."""
+    # Generate a short unique ID (8 chars)
+    project_id = str(uuid.uuid4())[:8]
+    logger.info(f"Creating project '{request.topic}' for user {user_id} with ID {project_id}")
     
-    # Ensure project path implies user path
     memory = get_memory_manager(project_id, user_id)
     
     # Create learning plan
@@ -226,12 +248,14 @@ async def create_project(request: CreateProjectRequest, user_id: str = Depends(g
 @app.get("/projects/{project_id}")
 async def get_project(project_id: str, user_id: str = Depends(get_user_id)):
     """Get detailed project information."""
+    logger.info(f"Getting project {project_id} for user {user_id}")
     memory = get_memory_manager(project_id, user_id)
     goal = memory.load_learning_goal()
     profile = memory.load_user_profile()
     
     if not goal:
-        raise HTTPException(status_code=404, detail="Project has no learning goal")
+        logger.warning(f"Project {project_id} not found for user {user_id}")
+        raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
     
     return {
         "id": project_id,
@@ -315,14 +339,23 @@ async def sync_flashcard_progress(project_id: str, sync_request: SyncProgressReq
 
 @app.get("/projects/{project_id}/diagnostic", response_model=List[QuestionResponse])
 async def get_diagnostic_quiz(project_id: str, user_id: str = Depends(get_user_id)):
-    """Generate a diagnostic quiz for the project."""
+    """Generate or retrieve a diagnostic quiz for the project."""
+    logger.info(f"Generating/Retrieving diagnostic quiz for project {project_id}")
     memory = get_memory_manager(project_id, user_id)
     goal = memory.load_learning_goal()
     
     if not goal:
-        raise HTTPException(status_code=404, detail="No learning goal found")
+        logger.error(f"Goal not found for project {project_id} (user {user_id})")
+        raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
     
-    questions = diagnostic_agent.generate_quiz(goal)
+    # Check if quiz already exists
+    questions = memory.load_diagnostic_quiz()
+    if not questions:
+        logger.info("Generating new diagnostic quiz...")
+        questions = diagnostic_agent.generate_quiz(goal)
+        memory.save_diagnostic_quiz(questions)
+    else:
+        logger.info("Loaded existing diagnostic quiz from disk.")
     
     return [
         QuestionResponse(
@@ -337,31 +370,48 @@ async def get_diagnostic_quiz(project_id: str, user_id: str = Depends(get_user_i
 
 @app.post("/projects/{project_id}/diagnostic", response_model=AssessmentResultResponse)
 async def submit_diagnostic(project_id: str, submission: SubmitAnswersRequest, user_id: str = Depends(get_user_id)):
-    """Submit diagnostic quiz answers and get results."""
+    """Submit diagnostic quiz answers and get results using the SAVED quiz."""
+    logger.info(f"Submitting diagnostic for project {project_id} (user {user_id})")
     memory = get_memory_manager(project_id, user_id)
     goal = memory.load_learning_goal()
     
     if not goal:
-        raise HTTPException(status_code=404, detail="No learning goal found")
+         logger.error(f"Goal not found for project {project_id} (user {user_id})")
+         raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
     
-    # Regenerate questions to grade
-    questions = diagnostic_agent.generate_quiz(goal)
+    # LOAD the quiz that was actually given to the user
+    questions = memory.load_diagnostic_quiz()
+    if not questions:
+        logger.error(f"No saved quiz found for project {project_id}. Cannot grade.")
+        # Fallback to generating one (unideal but prevents crash)
+        questions = diagnostic_agent.generate_quiz(goal)
     
     # Grade using examiner agent
     result = examiner_agent.evaluate_submission(questions, submission.answers)
     
     # Save to profile
-    import datetime
-    result.timestamp = datetime.datetime.now().isoformat()
+    result.timestamp = datetime.now().isoformat()
     
     profile = memory.load_user_profile()
     profile.assessment_history.append(result)
     memory.save_user_profile(profile)
     
+    logger.info(f"Diagnostic graded for {project_id}. Score: {result.score}")
+    
     return AssessmentResultResponse(
         score=result.score,
         correct_concepts=result.correct_concepts,
         missed_concepts=result.missed_concepts,
+        question_results=[
+            QuestionResultResponse(
+                text=r.text,
+                user_answer=r.user_answer,
+                correct_answer=r.correct_answer,
+                explanation=r.explanation,
+                is_correct=r.is_correct
+            )
+            for r in result.question_results
+        ],
         feedback=result.feedback,
         excelled_at=result.excelled_at,
         improvement_areas=result.improvement_areas,
@@ -375,18 +425,22 @@ async def submit_diagnostic(project_id: str, submission: SubmitAnswersRequest, u
 @app.get("/projects/{project_id}/exam", response_model=List[QuestionResponse])
 async def get_exam(project_id: str, user_id: str = Depends(get_user_id)):
     """Generate an exam for the current milestone."""
+    logger.info(f"Generating exam for project {project_id} (user {user_id})")
     memory = get_memory_manager(project_id, user_id)
     goal = memory.load_learning_goal()
     profile = memory.load_user_profile()
     
     if not goal:
+        logger.error(f"Goal not found for project {project_id} (user {user_id})")
         raise HTTPException(status_code=404, detail="No learning goal found")
     
     # Get current milestone
     if profile.current_milestone_index >= len(goal.milestones):
+        logger.warning(f"All milestones completed for project {project_id}")
         raise HTTPException(status_code=400, detail="All milestones completed")
     
     current_milestone = goal.milestones[profile.current_milestone_index]
+    logger.info(f"Current milestone: {current_milestone.title}")
     
     questions = examiner_agent.generate_assessment(goal, profile, current_milestone.title)
     
@@ -404,14 +458,17 @@ async def get_exam(project_id: str, user_id: str = Depends(get_user_id)):
 @app.post("/projects/{project_id}/exam", response_model=AssessmentResultResponse)
 async def submit_exam(project_id: str, submission: SubmitAnswersRequest, user_id: str = Depends(get_user_id)):
     """Submit exam answers and get results."""
+    logger.info(f"Submitting exam for project {project_id} (user {user_id})")
     memory = get_memory_manager(project_id, user_id)
     goal = memory.load_learning_goal()
     profile = memory.load_user_profile()
     
     if not goal:
+        logger.error(f"Goal not found for project {project_id} (user {user_id})")
         raise HTTPException(status_code=404, detail="No learning goal found")
     
     if profile.current_milestone_index >= len(goal.milestones):
+        logger.warning(f"All milestones completed for project {project_id}")
         raise HTTPException(status_code=400, detail="All milestones completed")
     
     current_milestone = goal.milestones[profile.current_milestone_index]
@@ -421,19 +478,20 @@ async def submit_exam(project_id: str, submission: SubmitAnswersRequest, user_id
     
     # Grade
     result = examiner_agent.evaluate_submission(questions, submission.answers)
-    
-    import datetime
-    result.timestamp = datetime.datetime.now().isoformat()
+    result.timestamp = datetime.now().isoformat()
     
     # Update profile
     profile.assessment_history.append(result)
     passed = result.score >= 0.8
     
     if passed:
+        logger.info(f"User passed milestone '{current_milestone.title}' for project {project_id}")
         profile.completed_milestones.append(current_milestone.title)
         profile.current_milestone_index += 1
         profile.current_deck_path = None
         profile.milestone_start_date = None
+    else:
+        logger.info(f"User failed milestone '{current_milestone.title}' with score {result.score}")
     
     memory.save_user_profile(profile)
     
@@ -441,6 +499,16 @@ async def submit_exam(project_id: str, submission: SubmitAnswersRequest, user_id
         score=result.score,
         correct_concepts=result.correct_concepts,
         missed_concepts=result.missed_concepts,
+        question_results=[
+            QuestionResultResponse(
+                text=r.text,
+                user_answer=r.user_answer,
+                correct_answer=r.correct_answer,
+                explanation=r.explanation,
+                is_correct=r.is_correct
+            )
+            for r in result.question_results
+        ],
         feedback=result.feedback,
         excelled_at=result.excelled_at,
         improvement_areas=result.improvement_areas,

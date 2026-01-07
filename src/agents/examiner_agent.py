@@ -104,6 +104,7 @@ class ExaminerAgent:
            - In 'excelled_at', list specific things the user did well.
            - In 'improvement_areas', list what the user didn't do well or missed.
            - In 'challenges', suggest what the user could do to challenge themselves further. If they achieve a high score 9 or 10, suggest questions going beyond the current learning plan, questions that apply the concepts to different contexts, or questions that require the user to apply the concepts in a different way.
+           - In 'question_results', provide a list of objects, one for each question, containing: 'text', 'user_answer', 'correct_answer', 'explanation', and 'is_correct' status.
        
         Output a valid AssessmentResult JSON object.
         """

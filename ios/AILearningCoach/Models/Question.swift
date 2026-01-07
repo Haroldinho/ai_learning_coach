@@ -27,11 +27,29 @@ struct Question: Identifiable, Codable {
     }
 }
 
+/// Result for an individual question
+struct QuestionResult: Identifiable, Codable {
+    var id: String { text } // Using text as UI ID for simplicity
+    let text: String
+    let userAnswer: String
+    let correctAnswer: String
+    let explanation: String
+    let isCorrect: Bool
+    
+    enum CodingKeys: String, CodingKey {
+        case text, explanation
+        case userAnswer = "user_answer"
+        case correctAnswer = "correct_answer"
+        case isCorrect = "is_correct"
+    }
+}
+
 /// Assessment result after completing a quiz or exam
 struct AssessmentResult: Codable {
     let score: Double
     let correctConcepts: [String]
     let missedConcepts: [String]
+    let questionResults: [QuestionResult]
     let feedback: String
     let excelledAt: String?
     let improvementAreas: String?
@@ -39,12 +57,12 @@ struct AssessmentResult: Codable {
     let passed: Bool
     
     enum CodingKeys: String, CodingKey {
-        case score, feedback, passed
+        case score, feedback, passed, challenges
         case correctConcepts = "correct_concepts"
         case missedConcepts = "missed_concepts"
+        case questionResults = "question_results"
         case excelledAt = "excelled_at"
         case improvementAreas = "improvement_areas"
-        case challenges
     }
     
     var scorePercentage: Int {
