@@ -197,10 +197,21 @@ struct HomeView: View {
 
 // MARK: - Project Card
 
+struct ProjectCard: View {
     @EnvironmentObject var dataController: DataController
+    let project: ProjectResponse
     
     var isSelected: Bool {
         dataController.currentProject?.id == project.id
+    }
+    
+    var progress: Double {
+        guard !project.completedMilestones.isEmpty || project.currentMilestoneIndex > 0 else { return 0 }
+        let duration = Double(project.totalDurationDays)
+        guard duration > 0 else { return 0 }
+        
+        let val = Double(project.completedMilestones.count) / (duration / 3.0)
+        return val.isFinite ? max(0, min(1, val)) : 0
     }
     
     var body: some View {
