@@ -283,37 +283,25 @@ async def get_flashcards(project_id: str, user_id: str = Depends(get_user_id)):
     if not goal:
         raise HTTPException(status_code=404, detail="No learning goal found")
     
-    # Generate flashcards if needed
-    # Note: optimizer_agent currently saves to current directory. 
-    # TODO: In a real multi-user env, we should update optimizer_agent 
-    # to save to the user's cache dir. For now, we assume the .apkg logic works as is
-    # or simple text response is sufficient for the app.
-    deck_path = optimizer_agent.generate_curriculum_and_cards(goal, profile)
+    # Generate flashcards
+    deck_path, generated_cards = optimizer_agent.generate_curriculum_and_cards(goal, profile)
     
     if deck_path == "All milestones completed!":
         return []
     
-    # For now, return mock flashcards (actual cards are in .apkg file)
-    # In production, we'd parse the deck or store cards in JSON
-    current_milestone = goal.milestones[profile.current_milestone_index] if profile.current_milestone_index < len(goal.milestones) else None
-    
-    if not current_milestone:
-        return []
-    
-    # Generate sample flashcards from concepts
-    flashcards = []
-    for i, concept in enumerate(current_milestone.concepts):
-        flashcards.append(FlashcardResponse(
+    # Return actual generated cards
+    return [
+        FlashcardResponse(
             id=i,
-            front=f"What is {concept}?",
-            back=f"Definition and explanation of {concept}",
-            tags=[current_milestone.title, "auto-generated"],
+            front=card.front,
+            back=card.back,
+            tags=card.tags,
             ease_factor=2.5,
             interval=1,
             repetitions=0
-        ))
-    
-    return flashcards
+        )
+        for i, card in enumerate(generated_cards)
+    ]
 
 
 @app.post("/projects/{project_id}/flashcards/review")
@@ -441,15 +429,17 @@ async def get_exam(project_id: str, user_id: str = Depends(get_user_id)):
         logger.error(f"Goal not found for project {project_id} (user {user_id})")
         raise HTTPException(status_code=404, detail="No learning goal found")
     
-    # Get current milestone
-    if profile.current_milestone_index >= len(goal.milestones):
-        logger.warning(f"All milestones completed for project {project_id}")
-        raise HTTPException(status_code=400, detail="All milestones completed")
-    
     current_milestone = goal.milestones[profile.current_milestone_index]
     logger.info(f"Current milestone: {current_milestone.title}")
     
-    questions = examiner_agent.generate_assessment(goal, profile, current_milestone.title)
+    # Check if exam already exists
+    questions = memory.load_exam_quiz()
+    if not questions:
+        logger.info("Generating new exam questions...")
+        questions = examiner_agent.generate_assessment(goal, profile, current_milestone.title)
+        memory.save_exam_quiz(questions)
+    else:
+        logger.info("Loaded existing exam questions from disk.")
     
     return [
         QuestionResponse(
@@ -474,14 +464,14 @@ async def submit_exam(project_id: str, submission: SubmitAnswersRequest, user_id
         logger.error(f"Goal not found for project {project_id} (user {user_id})")
         raise HTTPException(status_code=404, detail="No learning goal found")
     
-    if profile.current_milestone_index >= len(goal.milestones):
-        logger.warning(f"All milestones completed for project {project_id}")
-        raise HTTPException(status_code=400, detail="All milestones completed")
-    
     current_milestone = goal.milestones[profile.current_milestone_index]
     
-    # Regenerate questions to grade
-    questions = examiner_agent.generate_assessment(goal, profile, current_milestone.title)
+    # LOAD the exam questions that were actually given to the user
+    questions = memory.load_exam_quiz()
+    if not questions:
+        logger.error(f"No saved exam found for project {project_id}. Cannot grade.")
+        # Fallback to generating (unideal but prevents crash)
+        questions = examiner_agent.generate_assessment(goal, profile, current_milestone.title)
     
     # Grade
     result = examiner_agent.evaluate_submission(questions, submission.answers)
@@ -497,6 +487,8 @@ async def submit_exam(project_id: str, submission: SubmitAnswersRequest, user_id
         profile.current_milestone_index += 1
         profile.current_deck_path = None
         profile.milestone_start_date = None
+        # Clear the exam file so a new one can be generated for the next milestone
+        memory.save_exam_quiz([]) 
     else:
         logger.info(f"User failed milestone '{current_milestone.title}' with score {result.score}")
     

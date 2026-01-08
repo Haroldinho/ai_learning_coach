@@ -42,24 +42,35 @@ class ExaminerAgent:
                 # Pick 2-3 random missed concepts
                 recall_targets = random.sample(all_missed, min(len(all_missed), 3))
                 active_recall_context = f"""
-                IMPORTANT: You must include 3 questions specifically testing these previously missed concepts:
+                IMPORTANT: You must include 3 questions specifically testing these previously missed concepts from the project "{goal.smart_goal}":
                 {', '.join(recall_targets)}
                 """
 
         # 2. Main Prompt
+        # Find the milestone object for more detail
+        milestone_detail = next((m for m in goal.milestones if m.title == current_milestone_title), None)
+        milestone_context = ""
+        if milestone_detail:
+            milestone_context = f"""
+            Milestone Description: {milestone_detail.description}
+            Key Concepts to Test: {', '.join(milestone_detail.concepts)}
+            """
+
         prompt = f"""
-        You are a strict Examiner.
-        The user has just finished studying: "{current_milestone_title}".
+        You are a strict Examiner for the project: "{goal.smart_goal}".
+        The user has just finished studying the milestone: "{current_milestone_title}".
+        {milestone_context}
         
-        Generate a 10-question assessment.
+        Task:
+        Generate a 10-question assessment that strictly adheres to the project topic and milestone concepts.
         
         Structure:
-        - 7 questions strictly about "{current_milestone_title}".
-        - 3 questions for Active Recall.
+        - 7 questions strictly about "{current_milestone_title}" and its related concepts.
+        - 3 questions for Active Recall of previously learned or missed concepts, ensuring they remain strictly relevant to the project topic: "{goal.smart_goal}".
         {active_recall_context}
         
-        The questions should be challenging but fair.
-        Output a Quiz object containing 10 Question objects.
+        The questions should be challenging but fair, and EVERY question MUST be relevant to "{goal.smart_goal}".
+        Output a Quiz object containing exactly 10 Question objects.
         """
 
         try:

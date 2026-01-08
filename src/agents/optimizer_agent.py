@@ -28,10 +28,10 @@ class OptimizerAgent:
         stop=stop_after_attempt(5),
         wait=wait_exponential(multiplier=2, min=4, max=60)
     )
-    def generate_curriculum_and_cards(self, goal: LearningGoal, user_profile: UserProfile) -> str:
+    def generate_curriculum_and_cards(self, goal: LearningGoal, user_profile: UserProfile) -> tuple[str, List[Flashcard]]:
         """
         Determines the next phase of study and generates Anki flashcards.
-        Returns the path to the generated .apkg file.
+        Returns (path to .apkg file, list of Flashcard objects).
         """
         
         # 1. Determine what to study next based on uncompleted milestones
@@ -42,7 +42,7 @@ class OptimizerAgent:
                 break
         
         if not next_milestone:
-            return "All milestones completed!"
+            return "All milestones completed!", []
 
         # 2. Generate Flashcards for this milestone
         prompt = f"""
@@ -79,7 +79,7 @@ class OptimizerAgent:
             filename = f"deck_{next_milestone.title.replace(' ', '_')}.apkg"
             
             result_path = create_anki_deck(deck_name, anki_cards, filename=filename)
-            return result_path
+            return result_path, flashcards
 
         except Exception as e:
             print(f"Error generating curriculum/cards: {e}")
@@ -90,9 +90,10 @@ class OptimizerAgent:
         stop=stop_after_attempt(5),
         wait=wait_exponential(multiplier=2, min=4, max=60)
     )
-    def generate_remediation_cards(self, goal: LearningGoal, user_profile: UserProfile, result: AssessmentResult) -> str:
+    def generate_remediation_cards(self, goal: LearningGoal, user_profile: UserProfile, result: AssessmentResult) -> tuple[str, List[Flashcard]]:
         """
         Generates targeted remediation flashcards based on assessment failures.
+        Returns (path to .apkg file, list of Flashcard objects).
         """
         current_milestone = goal.milestones[user_profile.current_milestone_index]
         
@@ -130,7 +131,7 @@ class OptimizerAgent:
             filename = f"deck_REMEDIATION_{current_milestone.title.replace(' ', '_')}.apkg"
             
             result_path = create_anki_deck(deck_name, anki_cards, filename=filename)
-            return result_path
+            return result_path, flashcards
 
         except Exception as e:
             print(f"Error generating remediation cards: {e}")

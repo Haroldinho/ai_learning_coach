@@ -47,6 +47,19 @@ struct FlashcardStudyView: View {
             }
             .navigationTitle("Flashcard Study")
             .toolbar {
+                ToolbarItem(placement: .principal) {
+                    VStack {
+                        Text("Flashcard Study")
+                            .font(.headline)
+                        if let project = dataController.currentProject {
+                            Text(project.title.count > 75 ? String(project.title.prefix(72)) + "..." : project.title)
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+            }
+            .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack(spacing: 12) {
                         // Due count badge
@@ -100,6 +113,13 @@ struct FlashcardStudyView: View {
                 .foregroundColor(.secondaryText)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 40)
+            
+            if dataController.currentProject != nil {
+                Button("Generate Flashcards") {
+                    Task { await generateFlashcards() }
+                }
+                .buttonStyle(PrimaryButtonStyle())
+            }
         }
     }
     
@@ -249,6 +269,21 @@ struct FlashcardStudyView: View {
         
         // Sort by priority
         flashcards = SpacedRepetition.sortByPriority(flashcards)
+    }
+    
+    private func generateFlashcards() async {
+        guard let projectId = dataController.currentProject?.id else { return }
+        
+        isLoading = true
+        defer { isLoading = false }
+        
+        do {
+            let flashcardResponses = try await APIService.shared.getFlashcards(projectId: projectId)
+            dataController.saveFlashcards(from: flashcardResponses, projectId: projectId)
+            loadFlashcards()
+        } catch {
+            print("Failed to generate flashcards: \(error)")
+        }
     }
     
     private func rateCard(_ card: Flashcard, quality: SpacedRepetition.ReviewQuality) {

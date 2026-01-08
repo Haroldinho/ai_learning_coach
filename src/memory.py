@@ -10,6 +10,7 @@ class MemoryManager:
         self.user_file = f"{self.storage_dir}/user_profile.json"
         self.goal_file = f"{self.storage_dir}/learning_goal.json"
         self.diagnostic_file = f"{self.storage_dir}/diagnostic_quiz.json"
+        self.exam_file = f"{self.storage_dir}/exam_quiz.json"
 
     def get_project_title(self) -> str:
         """Returns the project title from the learning goal if available."""
@@ -56,3 +57,20 @@ class MemoryManager:
             os.remove(self.user_file)
         if os.path.exists(self.goal_file):
             os.remove(self.goal_file)
+        if os.path.exists(self.diagnostic_file):
+            os.remove(self.diagnostic_file)
+        if os.path.exists(self.exam_file):
+            os.remove(self.exam_file)
+
+    def save_exam_quiz(self, questions: List[Question]):
+        """Saves the generated exam quiz for consistency during grading."""
+        with open(self.exam_file, 'w') as f:
+            json.dump([q.model_dump() for q in questions], f, indent=2)
+
+    def load_exam_quiz(self) -> Optional[List[Question]]:
+        """Loads the saved exam quiz."""
+        if not os.path.exists(self.exam_file):
+            return None
+        with open(self.exam_file, 'r') as f:
+            data = json.load(f)
+            return [Question(**q) for q in data]

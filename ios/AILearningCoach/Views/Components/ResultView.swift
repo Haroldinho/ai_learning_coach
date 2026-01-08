@@ -62,7 +62,7 @@ struct ResultView: View {
                     .frame(width: 160, height: 160)
                 
                 Circle()
-                    .trim(from: 0, to: animateScore ? result.score : 0)
+                    .trim(from: 0, to: (animateScore && result.score.isFinite) ? CGFloat(result.score) : 0)
                     .stroke(
                         scoreColor,
                         style: StrokeStyle(lineWidth: 12, lineCap: .round)
@@ -225,9 +225,10 @@ struct ResultView: View {
     // MARK: - Computed Properties
     
     private var scoreColor: Color {
-        if result.score >= 0.8 {
+        let score = result.score.isFinite ? result.score : 0
+        if score >= 0.8 {
             return .success
-        } else if result.score >= 0.6 {
+        } else if score >= 0.6 {
             return .warning
         } else {
             return .error
@@ -235,11 +236,12 @@ struct ResultView: View {
     }
     
     private var scoreMessage: String {
-        if result.score >= 0.9 {
+        let score = result.score.isFinite ? result.score : 0
+        if score >= 0.9 {
             return "Outstanding! 🌟"
-        } else if result.score >= 0.8 {
+        } else if score >= 0.8 {
             return "Great Job! 👏"
-        } else if result.score >= 0.6 {
+        } else if score >= 0.6 {
             return "Good Effort! 💪"
         } else {
             return "Keep Practicing! 📚"

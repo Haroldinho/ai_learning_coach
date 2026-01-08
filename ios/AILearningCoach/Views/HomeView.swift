@@ -159,7 +159,10 @@ struct HomeView: View {
         defer { isLoading = false }
         
         do {
-            projects = try await APIService.shared.getProjects()
+            let fetchedProjects = try await APIService.shared.getProjects()
+            // Deduplicate by ID
+            var seen = Set<String>()
+            self.projects = fetchedProjects.filter { seen.insert($0.id).inserted }
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -194,12 +197,10 @@ struct HomeView: View {
 
 // MARK: - Project Card
 
-struct ProjectCard: View {
-    let project: ProjectResponse
+    @EnvironmentObject var dataController: DataController
     
-    var progress: Double {
-        guard project.completedMilestones.count > 0 || project.currentMilestoneIndex > 0 else { return 0 }
-        return Double(project.completedMilestones.count) / max(1, Double(project.totalDurationDays / 3))
+    var isSelected: Bool {
+        dataController.currentProject?.id == project.id
     }
     
     var body: some View {
@@ -208,7 +209,7 @@ struct ProjectCard: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(project.title)
                         .font(.headline2)
-                        .foregroundColor(.primaryText)
+                        .foregroundColor(isSelected ? .accentTeal : .primaryText)
                         .lineLimit(2)
                     
                     Text("\(project.totalDurationDays) days")
@@ -240,6 +241,10 @@ struct ProjectCard: View {
                 .foregroundColor(.secondaryText)
         }
         .padding()
+        .background(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(isSelected ? Color.accentTeal : Color.clear, lineWidth: 2)
+        )
         .cardStyle()
     }
 }
@@ -262,7 +267,7 @@ struct CircularProgressView: View {
                 )
                 .rotationEffect(.degrees(-90))
             
-            Text("\(Int(progress * 100))%")
+            Text("\(Int((progress.isFinite ? progress : 0) * 100))%")
                 .font(.caption2)
                 .foregroundColor(.accentTeal)
         }

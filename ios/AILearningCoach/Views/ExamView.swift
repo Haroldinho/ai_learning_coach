@@ -44,6 +44,19 @@ struct ExamView: View {
                 }
             }
             .navigationTitle("Milestone Exam")
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    VStack {
+                        Text("Milestone Exam")
+                            .font(.headline)
+                        if let project = dataController.currentProject {
+                            Text(project.title.count > 75 ? String(project.title.prefix(72)) + "..." : project.title)
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+            }
             .alert("Start Exam?", isPresented: $showConfirmStart) {
                 Button("Cancel", role: .cancel) { }
                 Button("Start") {

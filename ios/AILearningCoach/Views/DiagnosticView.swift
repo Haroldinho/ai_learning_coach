@@ -42,6 +42,19 @@ struct DiagnosticView: View {
                 }
             }
             .navigationTitle("Diagnostic")
+            .toolbar {
+                ToolbarItem(placement: .principal) {
+                    VStack {
+                        Text("Diagnostic")
+                            .font(.headline)
+                        if let project = dataController.currentProject {
+                            Text(project.title.count > 75 ? String(project.title.prefix(72)) + "..." : project.title)
+                                .font(.caption2)
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+            }
             .alert("Error", isPresented: .constant(errorMessage != nil)) {
                 Button("OK") { errorMessage = nil }
             } message: {
@@ -184,7 +197,8 @@ struct DiagnosticView: View {
             
             ScrollView {
                 LazyVStack(spacing: 16) {
-                    ForEach(Array(questions.enumerated()), id: \.offset) { index, question in
+                    ForEach(questions) { question in
+                        let index = questions.firstIndex(where: { $0.id == question.id }) ?? 0
                         VStack(alignment: .leading, spacing: 8) {
                             Text("Q\(index + 1): \(question.text)")
                                 .font(.subheadline)
