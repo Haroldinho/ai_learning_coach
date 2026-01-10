@@ -223,7 +223,7 @@ def main():
             print(f"✅ Anki Deck available at: {deck_path}")
         else:
             print("\n⚡ Generating Study Materials (Anki Deck)...")
-            deck_path = optimizer_agent.generate_curriculum_and_cards(learning_goal, user_profil)
+            deck_path, _ = optimizer_agent.generate_curriculum_and_cards(learning_goal, user_profil)
             
             # Save active state
             user_profil.current_deck_path = deck_path
@@ -277,7 +277,7 @@ def main():
             print(f"⚠️ Score too low to advance. Let's optimize the plan and try again in 3 days.")
             print("\n⚡ Generating targeted remediation materials...")
             
-            remediation_deck_path = optimizer_agent.generate_remediation_cards(learning_goal, user_profil, exam_result)
+            remediation_deck_path, _ = optimizer_agent.generate_remediation_cards(learning_goal, user_profil, exam_result)
             
             # Update profile with remediation deck
             user_profil.current_deck_path = remediation_deck_path
