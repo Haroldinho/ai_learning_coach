@@ -67,7 +67,6 @@ class APIService {
         }
         
         return try decoder.decode(ProjectResponse.self, from: data)
-        }
     }
     
     /// Get full project details including milestones
