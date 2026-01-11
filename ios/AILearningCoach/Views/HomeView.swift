@@ -182,16 +182,27 @@ struct HomeView: View {
     }
     
     private func selectProject(_ project: ProjectResponse) {
-        // Set as current project
-        dataController.currentProject = Project(
-            id: project.id,
-            title: project.title,
-            smartGoal: project.smartGoal,
-            totalDurationDays: project.totalDurationDays,
-            currentMilestoneIndex: project.currentMilestoneIndex,
-            completedMilestones: project.completedMilestones,
-            milestones: []
-        )
+        // Fetch full project details with milestones
+        Task {
+            do {
+                let fullProject = try await APIService.shared.getProjectDetails(projectId: project.id)
+                // Save to persistence
+                dataController.saveCurrentProject(fullProject)
+            } catch {
+                // Fallback: use ProjectResponse data
+                let fallbackProject = Project(
+                    id: project.id,
+                    title: project.title,
+                    smartGoal: project.smartGoal,
+                    totalDurationDays: project.totalDurationDays,
+                    currentMilestoneIndex: project.currentMilestoneIndex,
+                    completedMilestones: project.completedMilestones,
+                    milestones: project.milestones ?? []
+                )
+                dataController.saveCurrentProject(fallbackProject)
+                errorMessage = "Partial project data loaded: \(error.localizedDescription)"
+            }
+        }
     }
 }
 

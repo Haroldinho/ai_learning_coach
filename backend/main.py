@@ -254,7 +254,7 @@ async def create_project(request: CreateProjectRequest, user_id: str = Depends(g
 
 @app.get("/projects/{project_id}")
 async def get_project(project_id: str, user_id: str = Depends(get_user_id)):
-    """Get detailed project information."""
+    """Get detailed project information including full milestone details."""
     logger.info(f"Getting project {project_id} for user {user_id}")
     memory = get_memory_manager(project_id, user_id)
     goal = memory.load_learning_goal()
@@ -266,8 +266,17 @@ async def get_project(project_id: str, user_id: str = Depends(get_user_id)):
     
     return {
         "id": project_id,
-        "learning_goal": goal.model_dump(),
-        "user_profile": profile.model_dump()
+        "title": goal.smart_goal[:60] + "..." if len(goal.smart_goal) > 60 else goal.smart_goal,
+        "smart_goal": goal.smart_goal,
+        "total_duration_days": goal.total_duration_days,
+        "current_milestone_index": profile.current_milestone_index,
+        "completed_milestones": profile.completed_milestones,
+        "milestones": [{
+            "title": m.title,
+            "description": m.description,
+            "concepts": m.concepts,
+            "duration_days": m.duration_days
+        } for m in goal.milestones]
     }
 
 
@@ -275,7 +284,8 @@ async def get_project(project_id: str, user_id: str = Depends(get_user_id)):
 
 @app.get("/projects/{project_id}/flashcards", response_model=List[FlashcardResponse])
 async def get_flashcards(project_id: str, user_id: str = Depends(get_user_id)):
-    """Get flashcards for the current milestone."""
+    """Get flashcards for the current milestone (cached)."""
+    logger.info(f"Fetching flashcards for project {project_id} (user {user_id})")
     memory = get_memory_manager(project_id, user_id)
     goal = memory.load_learning_goal()
     profile = memory.load_user_profile()
@@ -283,13 +293,30 @@ async def get_flashcards(project_id: str, user_id: str = Depends(get_user_id)):
     if not goal:
         raise HTTPException(status_code=404, detail="No learning goal found")
     
-    # Generate flashcards
-    deck_path, generated_cards = optimizer_agent.generate_curriculum_and_cards(goal, profile)
+    # Find current milestone
+    current_milestone = None
+    for m in goal.milestones:
+        if m.title not in profile.completed_milestones:
+            current_milestone = m
+            break
     
-    if deck_path == "All milestones completed!":
+    if not current_milestone:
+        logger.info("All milestones completed")
         return []
     
-    # Return actual generated cards
+    # Check cache first
+    cached_cards = memory.load_milestone_flashcards(current_milestone.title)
+    if cached_cards:
+        logger.info(f"Loaded {len(cached_cards)} flashcards from cache for '{current_milestone.title}'")
+        generated_cards = cached_cards
+    else:
+        # Generate and cache
+        logger.info(f"Generating new flashcards for '{current_milestone.title}'")
+        deck_path, generated_cards = optimizer_agent.generate_curriculum_and_cards(goal, profile)
+        memory.save_milestone_flashcards(current_milestone.title, generated_cards)
+        logger.info(f"Cached {len(generated_cards)} flashcards")
+    
+    # Return cards
     return [
         FlashcardResponse(
             id=i,
@@ -328,6 +355,53 @@ async def sync_flashcard_progress(project_id: str, sync_request: SyncProgressReq
         "synced_reviews": synced_count,
         "message": f"Synced {synced_count} reviews from offline session"
     }
+
+
+@app.get("/projects/{project_id}/flashcards/remediation", response_model=List[FlashcardResponse])
+async def get_remediation_flashcards(project_id: str, user_id: str = Depends(get_user_id)):
+    """Get remediation flashcards if user failed last exam."""
+    logger.info(f"Fetching remediation flashcards for project {project_id} (user {user_id})")
+    memory = get_memory_manager(project_id, user_id)
+    goal = memory.load_learning_goal()
+    profile = memory.load_user_profile()
+    
+    if not goal:
+        raise HTTPException(status_code=404, detail="No learning goal found")
+    
+    # Check if user failed last exam
+    if not profile.assessment_history:
+        return []
+    
+    last_result = profile.assessment_history[-1]
+    if last_result.score >= 0.8:
+        # User passed, no remediation needed
+        return []
+    
+    # Check cache first
+    cached_cards = memory.load_remediation_flashcards()
+    if cached_cards:
+        logger.info(f"Loaded {len(cached_cards)} remediation flashcards from cache")
+        generated_cards = cached_cards
+    else:
+        # Generate remediation cards
+        logger.info("Generating new remediation flashcards")
+        deck_path, generated_cards = optimizer_agent.generate_remediation_cards(goal, profile, last_result)
+        memory.save_remediation_flashcards(generated_cards)
+        logger.info(f"Cached {len(generated_cards)} remediation flashcards")
+    
+    # Return cards
+    return [
+        FlashcardResponse(
+            id=i,
+            front=card.front,
+            back=card.back,
+            tags=card.tags,
+            ease_factor=2.5,
+            interval=1,
+            repetitions=0
+        )
+        for i, card in enumerate(generated_cards)
+    ]
 
 
 # ============== Diagnostic Endpoints ==============

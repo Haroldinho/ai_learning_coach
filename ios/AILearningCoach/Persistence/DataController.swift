@@ -20,6 +20,34 @@ class DataController: ObservableObject {
         } catch {
             fatalError("Failed to create ModelContainer: \(error)")
         }
+        
+        // Load last selected project
+        currentProject = loadCurrentProject()
+    }
+    
+    // MARK: - Project Persistence
+    
+    /// Save current project to UserDefaults
+    func saveCurrentProject(_ project: Project) {
+        currentProject = project
+        if let encoded = try? JSONEncoder().encode(project) {
+            UserDefaults.standard.set(encoded, forKey: "currentProject")
+        }
+    }
+    
+    /// Load current project from UserDefaults
+    func loadCurrentProject() -> Project? {
+        guard let data = UserDefaults.standard.data(forKey: "currentProject"),
+              let project = try? JSONDecoder().decode(Project.self, from: data) else {
+            return nil
+        }
+        return project
+    }
+    
+    /// Clear current project
+    func clearCurrentProject() {
+        currentProject = nil
+        UserDefaults.standard.removeObject(forKey: "currentProject")
     }
     
     // MARK: - Flashcard Operations
@@ -55,9 +83,19 @@ class DataController: ObservableObject {
         }
     }
     
-    /// Save flashcards from API response
+    /// Save flashcards from API response with deduplication
     func saveFlashcards(from responses: [FlashcardResponse], projectId: String) {
+        // First, check what cards already exist
+        let existingCards = fetchFlashcards(for: projectId)
+        let existingFronts = Set(existingCards.map { $0.front })
+        
+        // Only insert new cards
         for response in responses {
+            // Skip if card with same front text already exists
+            if existingFronts.contains(response.front) {
+                continue
+            }
+            
             let flashcard = Flashcard(
                 front: response.front,
                 back: response.back,
@@ -120,3 +158,4 @@ class DataController: ObservableObject {
         try? container.mainContext.save()
     }
 }
+

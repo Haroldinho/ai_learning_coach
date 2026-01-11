@@ -84,6 +84,15 @@ struct FlashcardStudyView: View {
             .onAppear {
                 loadFlashcards()
             }
+            .onChange(of: dataController.currentProject) { oldValue, newValue in
+                if oldValue?.id != newValue?.id {
+                    // Project changed, reload flashcards
+                    currentIndex = 0
+                    isFlipped = false
+                    showComplete = false
+                    loadFlashcards()
+                }
+            }
         }
     }
     
@@ -278,6 +287,17 @@ struct FlashcardStudyView: View {
         defer { isLoading = false }
         
         do {
+            // Try to load remediation cards first
+            let remediationCards = try await APIService.shared.getRemediationFlashcards(projectId: projectId)
+            
+            if !remediationCards.isEmpty {
+                // User has remediation cards available
+                dataController.saveFlashcards(from: remediationCards, projectId: projectId)
+                loadFlashcards()
+                return
+            }
+            
+            // Otherwise load regular flashcards
             let flashcardResponses = try await APIService.shared.getFlashcards(projectId: projectId)
             dataController.saveFlashcards(from: flashcardResponses, projectId: projectId)
             loadFlashcards()

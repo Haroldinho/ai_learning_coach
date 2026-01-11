@@ -74,3 +74,39 @@ class MemoryManager:
         with open(self.exam_file, 'r') as f:
             data = json.load(f)
             return [Question(**q) for q in data]
+    
+    def save_milestone_flashcards(self, milestone_title: str, flashcards: List):
+        """Saves generated flashcards for a specific milestone."""
+        from .models import Flashcard
+        safe_title = milestone_title.replace(' ', '_').replace('/', '_')
+        flashcard_file = f"{self.storage_dir}/flashcards_{safe_title}.json"
+        with open(flashcard_file, 'w') as f:
+            json.dump([card.model_dump() if isinstance(card, Flashcard) else card for card in flashcards], f, indent=2)
+    
+    def load_milestone_flashcards(self, milestone_title: str) -> Optional[List]:
+        """Loads cached flashcards for a specific milestone."""
+        from .models import Flashcard
+        safe_title = milestone_title.replace(' ', '_').replace('/', '_')
+        flashcard_file = f"{self.storage_dir}/flashcards_{safe_title}.json"
+        if not os.path.exists(flashcard_file):
+            return None
+        with open(flashcard_file, 'r') as f:
+            data = json.load(f)
+            return [Flashcard(**card) for card in data]
+    
+    def save_remediation_flashcards(self, flashcards: List):
+        """Saves remediation flashcards."""
+        from .models import Flashcard
+        remediation_file = f"{self.storage_dir}/flashcards_remediation.json"
+        with open(remediation_file, 'w') as f:
+            json.dump([card.model_dump() if isinstance(card, Flashcard) else card for card in flashcards], f, indent=2)
+    
+    def load_remediation_flashcards(self) -> Optional[List]:
+        """Loads cached remediation flashcards."""
+        from .models import Flashcard
+        remediation_file = f"{self.storage_dir}/flashcards_remediation.json"
+        if not os.path.exists(remediation_file):
+            return None
+        with open(remediation_file, 'r') as f:
+            data = json.load(f)
+            return [Flashcard(**card) for card in data]

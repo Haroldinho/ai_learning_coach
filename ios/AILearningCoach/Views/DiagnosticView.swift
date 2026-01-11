@@ -60,6 +60,12 @@ struct DiagnosticView: View {
             } message: {
                 Text(errorMessage ?? "")
             }
+            .onChange(of: dataController.currentProject) { oldValue, newValue in
+                if oldValue?.id != newValue?.id {
+                    // Project changed, reset quiz
+                    resetQuiz()
+                }
+            }
         }
     }
     

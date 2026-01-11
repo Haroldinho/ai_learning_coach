@@ -67,6 +67,20 @@ class APIService {
         }
         
         return try decoder.decode(ProjectResponse.self, from: data)
+        }
+    }
+    
+    /// Get full project details including milestones
+    func getProjectDetails(projectId: String) async throws -> Project {
+        let url = URL(string: "\(baseURL)/projects/\(projectId)")!
+        let (data, response) = try await session.data(from: url)
+        
+        guard let httpResponse = response as? HTTPURLResponse,
+              httpResponse.statusCode == 200 else {
+            throw APIError.serverError
+        }
+        
+        return try decoder.decode(Project.self, from: data)
     }
     
     // MARK: - Flashcard Endpoints
@@ -74,6 +88,19 @@ class APIService {
     /// Get flashcards for a project
     func getFlashcards(projectId: String) async throws -> [FlashcardResponse] {
         let url = URL(string: "\(baseURL)/projects/\(projectId)/flashcards")!
+        let (data, response) = try await session.data(from: url)
+        
+        guard let httpResponse = response as? HTTPURLResponse,
+              httpResponse.statusCode == 200 else {
+            throw APIError.serverError
+        }
+        
+        return try decoder.decode([FlashcardResponse].self, from: data)
+    }
+    
+    /// Get remediation flashcards
+    func getRemediationFlashcards(projectId: String) async throws -> [FlashcardResponse] {
+        let url = URL(string: "\(baseURL)/projects/\(projectId)/flashcards/remediation")!
         let (data, response) = try await session.data(from: url)
         
         guard let httpResponse = response as? HTTPURLResponse,

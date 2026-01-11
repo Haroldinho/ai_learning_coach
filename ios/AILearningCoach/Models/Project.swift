@@ -16,10 +16,23 @@ struct Project: Identifiable, Codable {
         let description: String
         let concepts: [String]
         let durationDays: Int
+        
+        enum CodingKeys: String, CodingKey {
+            case title, description, concepts
+            case durationDays = "duration_days"
+        }
+    }
+    
+    enum CodingKeys: String, CodingKey {
+        case id, title, milestones
+        case smartGoal = "smart_goal"
+        case totalDurationDays = "total_duration_days"
+        case currentMilestoneIndex = "current_milestone_index"
+        case completedMilestones = "completed_milestones"
     }
 }
 
-/// API Response model
+/// API Response model - now matches full Project structure
 struct ProjectResponse: Codable {
     let id: String
     let title: String
@@ -27,12 +40,14 @@ struct ProjectResponse: Codable {
     let totalDurationDays: Int
     let currentMilestoneIndex: Int
     let completedMilestones: [String]
+    let milestones: [Project.Milestone]?
     
     enum CodingKeys: String, CodingKey {
-        case id, title
+        case id, title, milestones
         case smartGoal = "smart_goal"
         case totalDurationDays = "total_duration_days"
         case currentMilestoneIndex = "current_milestone_index"
         case completedMilestones = "completed_milestones"
     }
 }
+

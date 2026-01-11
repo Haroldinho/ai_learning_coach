@@ -70,6 +70,12 @@ struct ExamView: View {
             } message: {
                 Text(errorMessage ?? "")
             }
+            .onChange(of: dataController.currentProject) { oldValue, newValue in
+                if oldValue?.id != newValue?.id {
+                    // Project changed, reset exam
+                    resetExam()
+                }
+            }
         }
     }
     
