@@ -1,7 +1,7 @@
 import Foundation
 
 /// Represents a learning project
-struct Project: Identifiable, Codable {
+struct Project: Identifiable, Codable, Equatable {
     let id: String
     var title: String
     var smartGoal: String
@@ -10,7 +10,7 @@ struct Project: Identifiable, Codable {
     var completedMilestones: [String]
     var milestones: [Milestone]
     
-    struct Milestone: Identifiable, Codable {
+    struct Milestone: Identifiable, Codable, Equatable {
         var id: String { title }
         let title: String
         let description: String
