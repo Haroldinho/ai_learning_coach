@@ -19,18 +19,11 @@ This monorepo contains three main components:
 ```
 ai-learning-coach/
 ├── src/                 # Python CLI & AI Agents
-│   ├── agents/          # GoalAgent, DiagnosticAgent, OptimizerAgent, ExaminerAgent
-│   ├── main.py          # CLI entry point
-│   └── ...
 ├── backend/             # FastAPI backend for iOS app
-│   ├── main.py          # API endpoints
-│   └── requirements.txt
 ├── ios/                 # SwiftUI iOS/iPadOS/macOS app
-│   ├── AILearningCoach/
-│   └── AILearningCoach.xcodeproj
 ├── prompts/             # System prompts for AI agents
 ├── figures/             # Architecture diagrams and images
-└── .coin_cache/         # Learning project data (git-ignored)
+└── .coin_cache/         # Multi-tenant state: {user_id}/{project_id}/
 ```
 
 ## 🤖 The Agents
@@ -139,9 +132,12 @@ A beautiful SwiftUI app that provides the same learning experience on Apple devi
 
 ### Features
 
-*   📚 **Flashcard Study** - SM-2 spaced repetition algorithm with offline support
-*   🩺 **Diagnostic Mode** - AI-graded knowledge assessments
+*   📚 **Flashcard Study** - Native SM-2 spaced repetition with server-side caching
+*   🩹 **Remediation Mode** - Targeted cards generated when assessment thresholds aren't met
+*   🩺 **Diagnostic Mode** - 10-question AI-graded knowledge assessments
 *   📝 **Examiner Mode** - Milestone assessments with 80% pass threshold
+*   🔄 **Cross-View Sync** - Seamless project switching across all views
+*   💾 **Persistence** - Local project selection and data cache (UserDefaults + SwiftData)
 
 ### Running the App
 
@@ -182,6 +178,9 @@ This project is for personal learning purposes.
 
 ---
 
+---
+
 **DISCLAIMER:**
 The code was vibe-coded at >90% using Gemini 3.0 and Antigravity.
+Architecture finalized and critical state persistence issues resolved on 2026-01-10.
 Use at your own risk.

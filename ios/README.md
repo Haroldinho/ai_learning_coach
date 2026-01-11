@@ -20,8 +20,9 @@ A SwiftUI app for iPhone, iPad, and Mac that provides an AI-powered learning exp
 - SM-2 spaced repetition algorithm
 - Card flipping animations
 - Rating system: Again / Hard / Good / Easy
-- Offline support with local storage
-- Automatic sync when online
+- Offline review support with local SwiftData storage
+- Automatic sync and deduplication logic
+- **Remediation Support**: Loads targeted cards automatically if a milestone exam is failed
 
 ### 🩺 Diagnostic Mode
 - 10-question knowledge assessment
@@ -32,6 +33,8 @@ A SwiftUI app for iPhone, iPad, and Mac that provides an AI-powered learning exp
 - Milestone assessments with 80% pass threshold
 - Active recall questions from previous milestones
 - Progress tracking and advancement
+- **Project Persistence**: Remembers your selected project and stores full milestone details locally (UserDefaults + SwiftData)
+- **Reactive Sync**: Seamlessly updates all views when switching projects via `.onChange` reactive bindings
 
 ## Architecture
 

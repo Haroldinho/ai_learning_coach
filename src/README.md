@@ -54,16 +54,18 @@ Follow the on-screen prompts to enter your learning topic and interact with the 
 
 ## 🧠 Memory & State Management
 
-The CLI uses a simple file-based persistence system to maintain state between sessions.
+The system uses a robust file-based persistence system to maintain state between sessions, shared between the CLI and the FastAPI backend.
 
 *   **Location**: All state is stored in the `.coin_cache` directory (in the project root).
-*   **Structure**: Each learning project has its own dedicated subdirectory inside `.coin_cache` (e.g., `.coin_cache/learn_quantum_physics`).
+*   **Structure**: Supports multi-tenancy. Project data is isolated by user: `.coin_cache/{user_id}/{project_id}/`.
 *   **Mechanism**: The `MemoryManager` class (`memory.py`) serializes the internal Pydantic models to JSON files.
 *   **Files**:
     *   `learning_goal.json`: Stores the current active SMART goal and its milestones.
-    *   `user_profile.json`: Tracks the user's progress, including completed milestones, assessment history, and concept mastery levels.
+    *   `user_profile.json`: Tracks progress, completed milestones, and assessment history.
+    *   `flashcards_{milestone_title}.json`: **Caching Layer**. Stores generated flashcards to avoid redundant LLM calls.
+    *   `flashcards_remediation.json`: Stores remediation flashcards for target review.
 
-This structure allows you to maintain **multiple independent learning projects**. On startup, the system will ask if you want to continue an existing project or start a new one.
+This structure allows for **multiple independent learning projects** and **efficient state restoration**.
 
 ## 📦 Anki Packages
 
