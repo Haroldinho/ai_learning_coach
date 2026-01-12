@@ -11,24 +11,40 @@ class APIService {
     // The currently active URL, defaults to Render
     private(set) var baseURL: String = renderURL
     
-    // Unique ID for this user/device
-    private let userID = UserPersistence.getUserID()
+    // Public getter for UI
+    var currentUserID: String { return userID }
     
-    private let session: URLSession
+    // Unique ID for this user/device
+    private var userID: String
+    
+    private var session: URLSession!
     private let decoder: JSONDecoder
     private let encoder: JSONEncoder
     
     private init() {
+        self.userID = UserPersistence.getUserID()
+        self.decoder = JSONDecoder()
+        self.encoder = JSONEncoder()
+        
+        setupSession()
+    }
+    
+    private func setupSession() {
         let config = URLSessionConfiguration.default
         config.timeoutIntervalForRequest = 30
         
         // Add User ID to all request headers
         config.httpAdditionalHeaders = ["X-User-ID": userID]
         
-        session = URLSession(configuration: config)
-        
-        decoder = JSONDecoder()
-        encoder = JSONEncoder()
+        self.session = URLSession(configuration: config)
+    }
+    
+    /// Update the current user identity and reset session
+    func updateIdentity(newID: String) {
+        self.userID = newID
+        UserPersistence.setUserID(newID)
+        setupSession()
+        print("✅ Identity updated to: \(newID)")
     }
     
     // MARK: - Project Endpoints
@@ -80,6 +96,33 @@ class APIService {
         }
         
         return try decoder.decode(Project.self, from: data)
+    }
+    
+    /// Update project milestones
+    func updateProjectPlan(projectId: String, milestones: [Milestone]) async throws -> ProjectResponse {
+        let url = URL(string: "\(baseURL)/projects/\(projectId)/plan")!
+        var request = URLRequest(url: url)
+        request.httpMethod = "PUT"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        let body: [String: Any] = [
+            "milestones": milestones.map { [
+                "title": $0.title,
+                "description": $0.description,
+                "concepts": $0.concepts,
+                "duration_days": $0.durationDays
+            ] }
+        ]
+        request.httpBody = try JSONSerialization.data(withJSONObject: body)
+        
+        let (data, response) = try await session.data(for: request)
+        
+        guard let httpResponse = response as? HTTPURLResponse,
+              httpResponse.statusCode == 200 else {
+            throw APIError.serverError
+        }
+        
+        return try decoder.decode(ProjectResponse.self, from: data)
     }
     
     // MARK: - Flashcard Endpoints

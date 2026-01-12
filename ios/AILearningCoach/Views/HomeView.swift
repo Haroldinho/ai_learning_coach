@@ -6,6 +6,7 @@ struct HomeView: View {
     @State private var projects: [ProjectResponse] = []
     @State private var isLoading = false
     @State private var showNewProject = false
+    @State private var showSettings = false
     @State private var newTopic = ""
     @State private var errorMessage: String?
     @State private var isConnected = false
@@ -29,10 +30,17 @@ struct HomeView: View {
             .navigationTitle("Learning Projects")
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: { showNewProject = true }) {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.title2)
-                            .foregroundColor(.accentTeal)
+                    HStack {
+                        Button(action: { showSettings = true }) {
+                            Image(systemName: "gearshape.fill")
+                                .foregroundColor(.secondaryText)
+                        }
+                        
+                        Button(action: { showNewProject = true }) {
+                            Image(systemName: "plus.circle.fill")
+                                .font(.title2)
+                                .foregroundColor(.accentTeal)
+                        }
                     }
                 }
                 
@@ -42,6 +50,12 @@ struct HomeView: View {
             }
             .sheet(isPresented: $showNewProject) {
                 newProjectSheet
+            }
+            .navigationDestination(isPresented: $showSettings) {
+                SettingsView()
+            }
+            .sheet(item: $projectToEdit) { project in
+                PlanEditorView(project: project)
             }
             .alert("Error", isPresented: .constant(errorMessage != nil)) {
                 Button("OK") { errorMessage = nil }
@@ -101,9 +115,38 @@ struct HomeView: View {
                         .onTapGesture {
                             selectProject(project)
                         }
+                        .contextMenu {
+                            Button {
+                                // We need full project details to edit, so we fetch/use existing if available
+                                selectProjectForEditing(project)
+                            } label: {
+                                Label("Refine Plan", systemImage: "pencil.and.list.clipboard")
+                            }
+                        }
                 }
             }
             .padding()
+        }
+    }
+    
+    // Helper to prepare for editing
+    @State private var projectToEdit: Project?
+    
+    private func selectProjectForEditing(_ response: ProjectResponse) {
+        Task {
+            // Optimistic check: if current loaded project matches, use it
+            if let current = dataController.currentProject, current.id == response.id {
+                projectToEdit = current
+                return
+            }
+            
+            // Otherwise fetch fresh
+            do {
+                let full = try await APIService.shared.getProjectDetails(projectId: response.id)
+                projectToEdit = full
+            } catch {
+                errorMessage = "Could not load plan: \(error.localizedDescription)"
+            }
         }
     }
     

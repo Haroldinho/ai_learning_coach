@@ -15,4 +15,9 @@ struct UserPersistence {
         UserDefaults.standard.set(newID, forKey: userIDKey)
         return newID
     }
+    
+    /// Storing a new user ID (e.g. for syncing with another device)
+    static func setUserID(_ id: String) {
+        UserDefaults.standard.set(id, forKey: userIDKey)
+    }
 }
