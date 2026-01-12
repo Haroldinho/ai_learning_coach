@@ -23,6 +23,7 @@
 		4A7009892F14901A000E7D8D /* UserPersistence.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A7009882F14901A000E7D8D /* UserPersistence.swift */; };
 		4A70098C2F149063000E7D8D /* PlanEditorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A70098A2F149063000E7D8D /* PlanEditorView.swift */; };
 		4A70098D2F149063000E7D8D /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A70098B2F149063000E7D8D /* SettingsView.swift */; };
+		4A70098F2F149D3D000E7D8D /* SplashScreenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A70098E2F149D3D000E7D8D /* SplashScreenView.swift */; };
 		AABB0001AABB0001AABB0001 /* AILearningCoachApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AABB0002AABB0002AABB0002 /* AILearningCoachApp.swift */; };
 		AABB0003AABB0003AABB0003 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AABB0004AABB0004AABB0004 /* ContentView.swift */; };
 		AABB0005AABB0005AABB0005 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AABB0006AABB0006AABB0006 /* Assets.xcassets */; };
@@ -45,6 +46,7 @@
 		4A7009882F14901A000E7D8D /* UserPersistence.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserPersistence.swift; sourceTree = "<group>"; };
 		4A70098A2F149063000E7D8D /* PlanEditorView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlanEditorView.swift; sourceTree = "<group>"; };
 		4A70098B2F149063000E7D8D /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		4A70098E2F149D3D000E7D8D /* SplashScreenView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SplashScreenView.swift; sourceTree = "<group>"; };
 		AABB0002AABB0002AABB0002 /* AILearningCoachApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AILearningCoachApp.swift; sourceTree = "<group>"; };
 		AABB0004AABB0004AABB0004 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		AABB0006AABB0006AABB0006 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
@@ -107,6 +109,7 @@
 		4A4F0DF42F05D69F002B3204 /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				4A70098E2F149D3D000E7D8D /* SplashScreenView.swift */,
 				4A70098A2F149063000E7D8D /* PlanEditorView.swift */,
 				4A70098B2F149063000E7D8D /* SettingsView.swift */,
 				4A4F0DEF2F05D69F002B3204 /* Components */,
@@ -229,6 +232,7 @@
 				4A4F0DFA2F05D69F002B3204 /* FlashcardStudyView.swift in Sources */,
 				4A4F0DFB2F05D69F002B3204 /* Question.swift in Sources */,
 				4A4F0DFC2F05D69F002B3204 /* Flashcard.swift in Sources */,
+				4A70098F2F149D3D000E7D8D /* SplashScreenView.swift in Sources */,
 				4A4F0DFD2F05D69F002B3204 /* SpacedRepetition.swift in Sources */,
 				4A4F0DFE2F05D69F002B3204 /* HomeView.swift in Sources */,
 				4A4F0DFF2F05D69F002B3204 /* Project.swift in Sources */,

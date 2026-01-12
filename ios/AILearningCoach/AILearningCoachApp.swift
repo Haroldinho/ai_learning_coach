@@ -7,7 +7,7 @@ struct AILearningCoachApp: App {
     
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            SplashScreenView()
                 .environmentObject(dataController)
                 .environmentObject(notificationManager)
                 .onAppear {
