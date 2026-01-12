@@ -32,50 +32,6 @@ from src.agents.goal_agent import GoalAgent
 from src.agents.diagnostic_agent import DiagnosticAgent
 from src.agents.optimizer_agent import OptimizerAgent
 from src.agents.examiner_agent import ExaminerAgent
-class UpdatePlanRequest(BaseModel):
-    milestones: List[dict]
-
-
-@app.put("/projects/{project_id}/plan", response_model=ProjectResponse)
-async def update_project_plan(project_id: str, request: UpdatePlanRequest, user_id: str = Depends(get_user_id)):
-    """Update the milestones for a project."""
-    logger.info(f"Updating plan for project {project_id} (user {user_id})")
-    memory = get_memory_manager(project_id, user_id)
-    goal = memory.load_learning_goal()
-    profile = memory.load_user_profile()
-    
-    if not goal:
-        raise HTTPException(status_code=404, detail="No learning goal found")
-    
-    # Reconstruct Milestone objects from dicts
-    try:
-        new_milestones = [
-            Milestone(
-                title=m['title'],
-                description=m['description'],
-                concepts=m['concepts'],
-                duration_days=m.get('duration_days', 3)
-            ) for m in request.milestones
-        ]
-    except KeyError as e:
-        raise HTTPException(status_code=400, detail=f"Missing field in milestone: {e}")
-        
-    # Validation: Don't allow changing past milestones if they are already completed?
-    # For now, we trust the UI to handle presentation, but we should ensure the count is consistent.
-    
-    goal.milestones = new_milestones
-    goal.total_duration_days = sum(m.duration_days for m in new_milestones)
-    
-    memory.save_learning_goal(goal)
-    
-    return ProjectResponse(
-        id=project_id,
-        title=goal.smart_goal[:60] + "..." if len(goal.smart_goal) > 60 else goal.smart_goal,
-        smart_goal=goal.smart_goal,
-        total_duration_days=goal.total_duration_days,
-        current_milestone_index=profile.current_milestone_index,
-        completed_milestones=profile.completed_milestones
-    )
 
 from src.utils import to_snake_case
 
@@ -291,6 +247,52 @@ async def create_project(request: CreateProjectRequest, user_id: str = Depends(g
         title=learning_goal.smart_goal[:60] + "..." if len(learning_goal.smart_goal) > 60 else learning_goal.smart_goal,
         smart_goal=learning_goal.smart_goal,
         total_duration_days=learning_goal.total_duration_days,
+        current_milestone_index=profile.current_milestone_index,
+        completed_milestones=profile.completed_milestones
+    )
+
+
+class UpdatePlanRequest(BaseModel):
+    milestones: List[dict]
+
+
+@app.put("/projects/{project_id}/plan", response_model=ProjectResponse)
+async def update_project_plan(project_id: str, request: UpdatePlanRequest, user_id: str = Depends(get_user_id)):
+    """Update the milestones for a project."""
+    logger.info(f"Updating plan for project {project_id} (user {user_id})")
+    memory = get_memory_manager(project_id, user_id)
+    goal = memory.load_learning_goal()
+    profile = memory.load_user_profile()
+    
+    if not goal:
+        raise HTTPException(status_code=404, detail="No learning goal found")
+    
+    # Reconstruct Milestone objects from dicts
+    try:
+        new_milestones = [
+            Milestone(
+                title=m['title'],
+                description=m['description'],
+                concepts=m['concepts'],
+                duration_days=m.get('duration_days', 3)
+            ) for m in request.milestones
+        ]
+    except KeyError as e:
+        raise HTTPException(status_code=400, detail=f"Missing field in milestone: {e}")
+        
+    # Validation: Don't allow changing past milestones if they are already completed?
+    # For now, we trust the UI to handle presentation, but we should ensure the count is consistent.
+    
+    goal.milestones = new_milestones
+    goal.total_duration_days = sum(m.duration_days for m in new_milestones)
+    
+    memory.save_learning_goal(goal)
+    
+    return ProjectResponse(
+        id=project_id,
+        title=goal.smart_goal[:60] + "..." if len(goal.smart_goal) > 60 else goal.smart_goal,
+        smart_goal=goal.smart_goal,
+        total_duration_days=goal.total_duration_days,
         current_milestone_index=profile.current_milestone_index,
         completed_milestones=profile.completed_milestones
     )
