@@ -99,7 +99,7 @@ class APIService {
     }
     
     /// Update project milestones
-    func updateProjectPlan(projectId: String, milestones: [Milestone]) async throws -> ProjectResponse {
+    func updateProjectPlan(projectId: String, milestones: [Project.Milestone]) async throws -> ProjectResponse {
         let url = URL(string: "\(baseURL)/projects/\(projectId)/plan")!
         var request = URLRequest(url: url)
         request.httpMethod = "PUT"
@@ -299,21 +299,3 @@ enum APIError: LocalizedError {
     }
 }
 
-// MARK: - User Persistence
-
-/// Helper to manage user-specific identifying information
-struct UserPersistence {
-    private static let userIDKey = "com.ailcoach.user_id"
-    
-    /// Returns the unique ID for this device/user.
-    /// Generates one if it doesn't exist.
-    static func getUserID() -> String {
-        if let existingID = UserDefaults.standard.string(forKey: userIDKey) {
-            return existingID
-        }
-        
-        let newID = UUID().uuidString
-        UserDefaults.standard.set(newID, forKey: userIDKey)
-        return newID
-    }
-}
