@@ -12,10 +12,10 @@ struct Project: Identifiable, Codable, Equatable {
     
     struct Milestone: Identifiable, Codable, Equatable {
         var id: String { title }
-        let title: String
-        let description: String
-        let concepts: [String]
-        let durationDays: Int
+        var title: String
+        var description: String
+        var concepts: [String]
+        var durationDays: Int
         
         enum CodingKeys: String, CodingKey {
             case title, description, concepts

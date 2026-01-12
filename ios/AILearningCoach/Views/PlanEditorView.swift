@@ -5,10 +5,10 @@ struct PlanEditorView: View {
     @EnvironmentObject var dataController: DataController
     
     let projectId: String
-    @State private var milestones: [Milestone]
+    @State private var milestones: [Project.Milestone]
     @State private var isLoading = false
     @State private var errorMessage: String?
-    @State private var editMilestone: Milestone?
+    @State private var editMilestone: Project.Milestone?
     
     init(project: Project) {
         self.projectId = project.id
@@ -105,8 +105,8 @@ struct PlanEditorView: View {
 
 struct MilestoneEditSheet: View {
     @Environment(\.dismiss) var dismiss
-    @State var milestone: Milestone
-    var onSave: (Milestone) -> Void
+    @State var milestone: Project.Milestone
+    var onSave: (Project.Milestone) -> Void
     
     var body: some View {
         NavigationStack {

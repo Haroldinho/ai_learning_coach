@@ -32,6 +32,7 @@ from src.agents.goal_agent import GoalAgent
 from src.agents.diagnostic_agent import DiagnosticAgent
 from src.agents.optimizer_agent import OptimizerAgent
 from src.agents.examiner_agent import ExaminerAgent
+from src.models import LearningGoal, UserProfile, Flashcard, Question, AssessmentResult, Milestone
 
 from src.utils import to_snake_case
 
