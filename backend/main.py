@@ -88,6 +88,7 @@ class ProjectResponse(BaseModel):
     smart_goal: str
     total_duration_days: int
     current_milestone_index: int
+    current_milestone_title: Optional[str] = None
     completed_milestones: List[str]
 
 
@@ -222,6 +223,7 @@ async def get_projects(user_id: str = Depends(get_user_id)):
             smart_goal=goal.smart_goal if goal else "",
             total_duration_days=goal.total_duration_days if goal else 0,
             current_milestone_index=profile.current_milestone_index,
+            current_milestone_title=next((m.title for m in goal.milestones if m.title not in profile.completed_milestones), None) if goal else None,
             completed_milestones=profile.completed_milestones
         ))
     
@@ -249,6 +251,7 @@ async def create_project(request: CreateProjectRequest, user_id: str = Depends(g
         smart_goal=learning_goal.smart_goal,
         total_duration_days=learning_goal.total_duration_days,
         current_milestone_index=profile.current_milestone_index,
+        current_milestone_title=next((m.title for m in learning_goal.milestones if m.title not in profile.completed_milestones), None),
         completed_milestones=profile.completed_milestones
     )
 
@@ -295,6 +298,7 @@ async def update_project_plan(project_id: str, request: UpdatePlanRequest, user_
         smart_goal=goal.smart_goal,
         total_duration_days=goal.total_duration_days,
         current_milestone_index=profile.current_milestone_index,
+        current_milestone_title=next((m.title for m in goal.milestones if m.title not in profile.completed_milestones), None),
         completed_milestones=profile.completed_milestones
     )
 

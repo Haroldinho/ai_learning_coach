@@ -24,9 +24,9 @@ struct AILearningCoachApp: App {
                     }
                     #endif
                 }
-                .onChange(of: dataController.totalDueCount) { newCount in
+                .onChange(of: dataController.totalDueCount) { oldValue, newValue in
                     #if os(macOS)
-                    updateDockTile(count: newCount)
+                    updateDockTile(count: newValue)
                     #endif
                 }
         }

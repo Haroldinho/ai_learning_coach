@@ -7,6 +7,7 @@ struct Project: Identifiable, Codable, Equatable {
     var smartGoal: String
     var totalDurationDays: Int
     var currentMilestoneIndex: Int
+    var currentMilestoneTitle: String?
     var completedMilestones: [String]
     var milestones: [Milestone]
     
@@ -28,6 +29,7 @@ struct Project: Identifiable, Codable, Equatable {
         case smartGoal = "smart_goal"
         case totalDurationDays = "total_duration_days"
         case currentMilestoneIndex = "current_milestone_index"
+        case currentMilestoneTitle = "current_milestone_title"
         case completedMilestones = "completed_milestones"
     }
 }
@@ -39,6 +41,7 @@ struct ProjectResponse: Codable {
     let smartGoal: String
     let totalDurationDays: Int
     let currentMilestoneIndex: Int
+    let currentMilestoneTitle: String?
     let completedMilestones: [String]
     let milestones: [Project.Milestone]?
     
@@ -47,6 +50,7 @@ struct ProjectResponse: Codable {
         case smartGoal = "smart_goal"
         case totalDurationDays = "total_duration_days"
         case currentMilestoneIndex = "current_milestone_index"
+        case currentMilestoneTitle = "current_milestone_title"
         case completedMilestones = "completed_milestones"
     }
 }

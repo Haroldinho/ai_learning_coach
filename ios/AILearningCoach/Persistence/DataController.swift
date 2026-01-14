@@ -180,5 +180,16 @@ class DataController: ObservableObject {
         }
         try? container.mainContext.save()
     }
+    
+    /// Push back all current flashcards for a project by 20-30 days
+    func pushBackFlashcards(for projectId: String) {
+        let cards = fetchFlashcards(for: projectId)
+        for card in cards {
+            let randomDays = Int.random(in: 20...30)
+            card.nextReviewDate = Calendar.current.date(byAdding: .day, value: randomDays, to: Date()) ?? Date()
+            card.needsSync = true
+        }
+        try? container.mainContext.save()
+    }
 }
 

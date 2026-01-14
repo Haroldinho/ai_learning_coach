@@ -39,7 +39,7 @@ struct SpacedRepetition {
             )
             
             if newData.interval == 1 {
-                return "~10min"
+                return "~5min"
             } else if newData.interval < 7 {
                 return "~\(newData.interval)d"
             } else if newData.interval < 30 {
@@ -78,11 +78,15 @@ struct SpacedRepetition {
         // If quality < 3, reset the repetition count (card needs relearning)
         if quality < 3 {
             newRepetitions = 0
-            newInterval = 1
+            newInterval = 1 // Logic will treat 1 as 5 mins in date calculation
         } else {
             // Successful recall
             if newRepetitions == 0 {
-                newInterval = 1
+                if quality == 5 {
+                    newInterval = 10 // Easy gets 10 days initially
+                } else {
+                    newInterval = 1
+                }
             } else if newRepetitions == 1 {
                 newInterval = 6
             } else {
@@ -95,7 +99,13 @@ struct SpacedRepetition {
         newEaseFactor = max(1.3, easeFactor + 0.1 - Double(5 - quality) * (0.08 + Double(5 - quality) * 0.02))
         
         // Calculate next review date
-        let nextDate = Calendar.current.date(byAdding: .day, value: newInterval, to: Date()) ?? Date()
+        let nextDate: Date
+        if newInterval == 1 && quality < 3 {
+            // Again gets 5 minutes
+            nextDate = Calendar.current.date(byAdding: .minute, value: 5, to: Date()) ?? Date()
+        } else {
+            nextDate = Calendar.current.date(byAdding: .day, value: newInterval, to: Date()) ?? Date()
+        }
         
         return ReviewResult(
             easeFactor: newEaseFactor,

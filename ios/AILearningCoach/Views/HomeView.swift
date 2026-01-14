@@ -269,11 +269,14 @@ struct ProjectCard: View {
     }
     
     var progress: Double {
-        guard !project.completedMilestones.isEmpty || project.currentMilestoneIndex > 0 else { return 0 }
-        let duration = Double(project.totalDurationDays)
-        guard duration > 0 else { return 0 }
+        let total = Double(project.totalDurationDays)
+        guard total > 0 else { return 0 }
         
-        let val = Double(project.completedMilestones.count) / (duration / 3.0)
+        // Use milestone index for more granular progress if available
+        let milestonesPassed = Double(project.completedMilestones.count)
+        let totalMilestones = total / 3.0 // Assumes 3 days per milestone average
+        
+        let val = milestonesPassed / totalMilestones
         return val.isFinite ? max(0, min(1, val)) : 0
     }
     
@@ -313,6 +316,13 @@ struct ProjectCard: View {
             Text("\(project.completedMilestones.count) milestones completed")
                 .font(.caption2)
                 .foregroundColor(.secondaryText)
+            
+            if let current = project.currentMilestoneTitle {
+                Text("Currently on: \(current)")
+                    .font(.caption2)
+                    .fontWeight(.medium)
+                    .foregroundColor(.accentTeal)
+            }
         }
         .padding()
         .background(

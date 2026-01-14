@@ -334,6 +334,11 @@ struct ExamView: View {
         
         do {
             result = try await APIService.shared.submitExam(projectId: projectId, answers: answers)
+            
+            if let examResult = result, examResult.passed {
+                // Milestone passed - push back current cards
+                dataController.pushBackFlashcards(for: projectId)
+            }
         } catch {
             errorMessage = error.localizedDescription
         }
