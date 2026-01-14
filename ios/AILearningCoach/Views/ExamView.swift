@@ -338,6 +338,10 @@ struct ExamView: View {
             if let examResult = result, examResult.passed {
                 // Milestone passed - push back current cards
                 dataController.pushBackFlashcards(for: projectId)
+                
+                // Automatically fetch next milestone cards
+                let newCards = try await APIService.shared.getFlashcards(projectId: projectId)
+                dataController.saveFlashcards(from: newCards, projectId: projectId)
             }
         } catch {
             errorMessage = error.localizedDescription

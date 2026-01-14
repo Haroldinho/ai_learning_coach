@@ -89,6 +89,14 @@ struct FlashcardStudyView: View {
                             Image(systemName: "arrow.triangle.2.circlepath")
                                 .foregroundColor(.accentTeal)
                         }
+                        
+                        // Download/Generate button
+                        Button(action: {
+                            Task { await generateFlashcards() }
+                        }) {
+                            Image(systemName: "arrow.down.circle")
+                                .foregroundColor(.accentTeal)
+                        }
                     }
                 }
             }
