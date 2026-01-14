@@ -60,6 +60,17 @@ struct FlashcardStudyView: View {
                 }
             }
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    #if targetEnvironment(macCatalyst)
+                    Image("icarus_icon")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 32, height: 32)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                    #endif
+                }
+            }
+            .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     HStack(spacing: 12) {
                         // Due count badge

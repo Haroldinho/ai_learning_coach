@@ -16,7 +16,9 @@ class NotificationManager: ObservableObject {
             }
             
             if let error = error {
-                print("Notification authorization error: \(error)")
+                if (error as NSError).code != 1 {
+                    print("Notification authorization error: \(error)")
+                }
             }
         }
     }

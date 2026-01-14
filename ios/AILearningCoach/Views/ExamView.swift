@@ -45,6 +45,16 @@ struct ExamView: View {
             }
             .navigationTitle("Milestone Exam")
             .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    #if targetEnvironment(macCatalyst)
+                    Image("icarus_icon")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 32, height: 32)
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                    #endif
+                }
+                
                 ToolbarItem(placement: .principal) {
                     VStack {
                         Text("Milestone Exam")

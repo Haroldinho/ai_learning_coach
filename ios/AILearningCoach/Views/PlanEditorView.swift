@@ -90,7 +90,7 @@ struct PlanEditorView: View {
         defer { isLoading = false }
         
         do {
-            let updatedProject = try await APIService.shared.updateProjectPlan(projectId: projectId, milestones: milestones)
+            _ = try await APIService.shared.updateProjectPlan(projectId: projectId, milestones: milestones)
             
             // Refresh local state by re-fetching full details (since response is partial)
             let fullProject = try await APIService.shared.getProjectDetails(projectId: projectId)

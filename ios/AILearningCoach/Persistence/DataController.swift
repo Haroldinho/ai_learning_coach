@@ -10,6 +10,7 @@ class DataController: ObservableObject {
     @Published var currentProject: Project?
     @Published var isLoading = false
     @Published var error: String?
+    @Published var totalDueCount: Int = 0
     
     init() {
         let schema = Schema([Flashcard.self])
@@ -23,6 +24,11 @@ class DataController: ObservableObject {
         
         // Load last selected project
         currentProject = loadCurrentProject()
+        
+        // Initial count refresh
+        Task {
+            await refreshDueCount()
+        }
     }
     
     // MARK: - Project Persistence
@@ -109,6 +115,22 @@ class DataController: ObservableObject {
         }
         
         try? container.mainContext.save()
+        refreshDueCount()
+    }
+    
+    /// Refresh the total count of due cards across all projects
+    func refreshDueCount() {
+        let now = Date()
+        let descriptor = FetchDescriptor<Flashcard>(
+            predicate: #Predicate { $0.nextReviewDate <= now }
+        )
+        
+        do {
+            let cards = try container.mainContext.fetch(descriptor)
+            totalDueCount = cards.count
+        } catch {
+            print("Failed to refresh due count: \(error)")
+        }
     }
     
     /// Update flashcard after review
@@ -128,6 +150,7 @@ class DataController: ObservableObject {
         flashcard.needsSync = true
         
         try? container.mainContext.save()
+        refreshDueCount()
     }
     
     /// Get count of due cards

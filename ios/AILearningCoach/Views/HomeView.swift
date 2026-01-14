@@ -45,7 +45,16 @@ struct HomeView: View {
                 }
                 
                 ToolbarItem(placement: .navigationBarLeading) {
-                    connectionStatus
+                    HStack(spacing: 12) {
+                        #if targetEnvironment(macCatalyst)
+                        Image("icarus_icon")
+                            .resizable()
+                            .scaledToFit()
+                            .frame(width: 32, height: 32)
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                        #endif
+                        connectionStatus
+                    }
                 }
             }
             .sheet(isPresented: $showNewProject) {
